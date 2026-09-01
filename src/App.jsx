@@ -1,22 +1,22 @@
 import React, { useState, useEffect } from 'react';
+import { Routes, Route, useLocation } from 'react-router-dom';
 import Navbar from './components/Navbar/Navbar';
-import Hero from './components/Hero/Hero';
-import BrandStatement from './components/BrandStatement/BrandStatement';
-import WhyAraina from './components/WhyAraina/WhyAraina';
-import ProductShowcase from './components/ProductShowcase/ProductShowcase';
-import HealthOpportunity from './components/HealthOpportunity/HealthOpportunity';
-import OurStory from './components/OurStory/OurStory';
-import OurPurpose from './components/OurPurpose/OurPurpose';
-import MissionVision from './components/MissionVision/MissionVision';
-import Values from './components/Values/Values';
-import JoinUsComingSoon from './components/JoinUsComingSoon/JoinUsComingSoon';
-import FinalCTA from './components/FinalCTA/FinalCTA';
 import Footer from './components/Footer/Footer';
+import ScrollToTop from './components/ScrollToTop/ScrollToTop';
+
+import HomePage from './pages/HomePage';
+import AboutPage from './pages/AboutPage';
+import ProductsPage from './pages/ProductsPage';
+import WhyUsPage from './pages/WhyUsPage';
+import ContactPage from './pages/ContactPage';
 
 function App() {
   const [activeSection, setActiveSection] = useState('home');
+  const location = useLocation();
 
   useEffect(() => {
+    if (location.pathname !== '/') return;
+
     const sections = ['home', 'about', 'purpose', 'product', 'why-araina', 'join-us', 'contact'];
 
     const handleScroll = () => {
@@ -37,24 +37,22 @@ function App() {
 
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
+  }, [location.pathname]);
 
   return (
-    <div className="min-h-screen bg-araina-white text-araina-black font-unbounded selection:bg-araina-pink/20 selection:text-araina-pink">
+    <div className="min-h-screen bg-araina-white text-araina-black font-unbounded selection:bg-araina-pink/20 selection:text-araina-pink flex flex-col justify-between">
+      <ScrollToTop />
+      
       <Navbar activeSection={activeSection} setActiveSection={setActiveSection} />
       
-      <main>
-        <Hero />
-        <BrandStatement />
-        <WhyAraina />
-        <ProductShowcase />
-        <HealthOpportunity />
-        <OurStory />
-        <OurPurpose />
-        <MissionVision />
-        <Values />
-        <JoinUsComingSoon />
-        <FinalCTA />
+      <main className="flex-grow">
+        <Routes>
+          <Route path="/" element={<HomePage />} />
+          <Route path="/about" element={<AboutPage />} />
+          <Route path="/products" element={<ProductsPage />} />
+          <Route path="/why-us" element={<WhyUsPage />} />
+          <Route path="/contact" element={<ContactPage />} />
+        </Routes>
       </main>
 
       <Footer setActiveSection={setActiveSection} />
