@@ -1,6 +1,6 @@
-import React from 'react';
+import React from "react";
 
-export const InstagramIcon = ({ size = 18, className = '' }) => (
+export const InstagramIcon = ({ size = 18, className = "" }) => (
   <svg
     width={size}
     height={size}
@@ -18,7 +18,7 @@ export const InstagramIcon = ({ size = 18, className = '' }) => (
   </svg>
 );
 
-export const FacebookIcon = ({ size = 18, className = '' }) => (
+export const FacebookIcon = ({ size = 18, className = "" }) => (
   <svg
     width={size}
     height={size}
@@ -34,7 +34,7 @@ export const FacebookIcon = ({ size = 18, className = '' }) => (
   </svg>
 );
 
-export const YoutubeIcon = ({ size = 18, className = '' }) => (
+export const YoutubeIcon = ({ size = 18, className = "" }) => (
   <svg
     width={size}
     height={size}

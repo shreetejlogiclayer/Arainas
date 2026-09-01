@@ -1,40 +1,49 @@
-import React from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { MessageCircle, Mail, Phone, MapPin } from 'lucide-react';
-import { InstagramIcon, FacebookIcon, YoutubeIcon } from '../SocialIcons/SocialIcons';
-import { COMPANY_INFO, SOCIAL_LINKS } from '../../config/siteConfig';
+import React from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { MessageCircle, Mail, Phone, MapPin } from "lucide-react";
+import {
+  InstagramIcon,
+  FacebookIcon,
+  YoutubeIcon,
+} from "../SocialIcons/SocialIcons";
+import { COMPANY_INFO, SOCIAL_LINKS } from "../../config/siteConfig";
 
 const Footer = () => {
   const navigate = useNavigate();
   const currentYear = new Date().getFullYear();
 
   const menuItems = [
-    { name: 'Home', path: '/' },
-    { name: 'About', path: '/about' },
-    { name: 'Products / Services', path: '/products' },
-    { name: 'Why Us / Benefits', path: '/why-us' },
-    { name: 'Contact Us', path: '/contact' }
+    { name: "Home", path: "/" },
+    { name: "About", path: "/about" },
+    { name: "Products / Services", path: "/products" },
+    { name: "Why Us / Benefits", path: "/why-us" },
+    { name: "Contact Us", path: "/contact" },
   ];
 
   const handleNavClick = (path) => {
     navigate(path);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   const whatsappUrl = `https://wa.me/${COMPANY_INFO.whatsappNumber}?text=${encodeURIComponent("Hello, I would like to know more about ARAINA products and opportunities.")}`;
 
   return (
-    <footer id="contact" className="bg-araina-black text-araina-white py-16 border-t border-araina-white/10">
+    <footer
+      id="contact"
+      className="bg-araina-black text-araina-white py-16 border-t border-araina-white/10"
+    >
       <div className="max-w-7xl mx-auto px-6">
         <div className="grid grid-cols-1 md:grid-cols-12 gap-12 pb-12 border-b border-araina-white/10">
-
           {/* Brand Info */}
           <div className="md:col-span-4 flex flex-col items-start">
-            <Link to="/" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
+            <Link
+              to="/"
+              onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+            >
               <img
                 src="/assets/logo/araina-logo-light.png"
                 alt="Araina Logo Light"
-                className="h-10 w-auto object-contain mb-4 hover:opacity-90 transition-opacity"
+                className="h-20 w-auto object-contain mb-4 hover:opacity-90 transition-opacity"
               />
             </Link>
             <p className="text-xs uppercase tracking-[0.25em] text-araina-pink font-semibold mb-4">
@@ -81,17 +90,6 @@ const Footer = () => {
                   <YoutubeIcon size={16} />
                 </a>
               ) : null}
-
-              <a
-                href={whatsappUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label="WhatsApp"
-                className="w-9 h-9 rounded-full bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400 hover:bg-emerald-500 hover:text-white transition-all"
-                title="Connect on WhatsApp"
-              >
-                <MessageCircle size={16} />
-              </a>
             </div>
           </div>
 
@@ -123,7 +121,8 @@ const Footer = () => {
               {COMPANY_INFO.name}
             </p>
             <p className="text-[11px] text-araina-white/50 font-light leading-relaxed mb-4">
-              Flagship Brand: {COMPANY_INFO.brand}<br />
+              Flagship Brand: {COMPANY_INFO.brand}
+              <br />
               Feminine Hygiene & Wellness Platform
             </p>
 
@@ -142,15 +141,19 @@ const Footer = () => {
               </p>
             </div>
           </div>
-
         </div>
 
         {/* Bottom copyright row */}
         <div className="pt-8 flex flex-col sm:flex-row items-center justify-between text-[11px] text-araina-white/40 font-light">
-          <p>© {currentYear} {COMPANY_INFO.name} / {COMPANY_INFO.brand}. All rights reserved.</p>
+          <p className="text-sm">
+            © {currentYear} {COMPANY_INFO.name} / {COMPANY_INFO.brand}. All
+            rights reserved.
+          </p>
           <div className="flex items-center gap-6 mt-3 sm:mt-0">
-            <Link to="/contact" className="hover:text-araina-pink transition-colors">Privacy Policy</Link>
-            <Link to="/contact" className="hover:text-araina-pink transition-colors">Terms of Service</Link>
+            <p className="text-sm">
+              Designed & Developed by{" "}
+              <span className="font-semibold">Logic Layer</span>
+            </p>
           </div>
         </div>
       </div>

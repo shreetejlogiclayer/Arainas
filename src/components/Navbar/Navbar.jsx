@@ -11,9 +11,8 @@ const Navbar = ({ activeSection, setActiveSection }) => {
   const menuItems = [
     { name: "Home", id: "home", path: "/" },
     { name: "About", id: "about", path: "/about" },
-    { name: "Products", id: "product", path: "/products" },
+    { name: "Our Product", id: "product", path: "/products" },
     { name: "Why Araina", id: "why-araina", path: "/why-us" },
-    { name: "Join Us", id: "join-us", path: "/#join-us", sectionId: "join-us" },
     { name: "Contact", id: "contact", path: "/contact" },
   ];
 
@@ -58,7 +57,10 @@ const Navbar = ({ activeSection, setActiveSection }) => {
             const bodyRect = document.body.getBoundingClientRect().top;
             const elementRect = element.getBoundingClientRect().top;
             const elementPosition = elementRect - bodyRect;
-            window.scrollTo({ top: elementPosition - offset, behavior: "smooth" });
+            window.scrollTo({
+              top: elementPosition - offset,
+              behavior: "smooth",
+            });
           }
         }, 150);
       } else {
@@ -68,7 +70,10 @@ const Navbar = ({ activeSection, setActiveSection }) => {
           const bodyRect = document.body.getBoundingClientRect().top;
           const elementRect = element.getBoundingClientRect().top;
           const elementPosition = elementRect - bodyRect;
-          window.scrollTo({ top: elementPosition - offset, behavior: "smooth" });
+          window.scrollTo({
+            top: elementPosition - offset,
+            behavior: "smooth",
+          });
         }
       }
       if (setActiveSection) setActiveSection(item.sectionId);
@@ -83,12 +88,14 @@ const Navbar = ({ activeSection, setActiveSection }) => {
   const isItemActive = (item) => {
     if (location.pathname === "/about" && item.id === "about") return true;
     if (location.pathname === "/products" && item.id === "product") return true;
-    if (location.pathname === "/why-us" && item.id === "why-araina") return true;
+    if (location.pathname === "/why-us" && item.id === "why-araina")
+      return true;
     if (location.pathname === "/contact" && item.id === "contact") return true;
 
     if (location.pathname === "/") {
       if (activeSection === item.id) return true;
-      if (item.id === "home" && (!activeSection || activeSection === "home")) return true;
+      if (item.id === "home" && (!activeSection || activeSection === "home"))
+        return true;
     }
 
     return false;
@@ -98,10 +105,11 @@ const Navbar = ({ activeSection, setActiveSection }) => {
     <>
       {/* ==================== HEADER ==================== */}
       <header
-        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${isScrolled
-          ? "bg-araina-white/95 backdrop-blur-md py-1.5 shadow-sm border-b border-araina-pink/10"
-          : "bg-transparent py-2"
-          }`}
+        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
+          isScrolled
+            ? "bg-araina-white/95 backdrop-blur-md py-1.5 shadow-sm border-b border-araina-pink/10"
+            : "bg-transparent py-2"
+        }`}
       >
         <div className="max-w-7xl mx-auto px-5 sm:px-6 lg:px-8 flex items-center justify-between">
           {/* ==================== LOGO ==================== */}
@@ -135,16 +143,18 @@ const Navbar = ({ activeSection, setActiveSection }) => {
                 <button
                   key={item.id}
                   onClick={() => handleNavClick(item)}
-                  className={`text-xs uppercase tracking-widest font-medium transition-all duration-300 relative py-2 whitespace-nowrap ${active
-                    ? "text-araina-pink"
-                    : "text-araina-black/75 hover:text-araina-pink"
-                    }`}
+                  className={`text-xs uppercase tracking-widest font-medium transition-all duration-300 relative py-2 whitespace-nowrap ${
+                    active
+                      ? "text-araina-pink"
+                      : "text-araina-black/75 hover:text-araina-pink"
+                  }`}
                 >
                   {item.name}
 
                   <span
-                    className={`absolute bottom-0 left-0 right-0 h-[2px] bg-araina-pink transition-transform duration-300 origin-left ${active ? "scale-x-100" : "scale-x-0"
-                      }`}
+                    className={`absolute bottom-0 left-0 right-0 h-[2px] bg-araina-pink transition-transform duration-300 origin-left ${
+                      active ? "scale-x-100" : "scale-x-0"
+                    }`}
                   />
                 </button>
               );
@@ -154,7 +164,9 @@ const Navbar = ({ activeSection, setActiveSection }) => {
           {/* ==================== DESKTOP JOIN CTA ==================== */}
           <div className="hidden lg:block flex-shrink-0">
             <button
-              onClick={() => handleNavClick(menuItems.find((i) => i.id === "join-us"))}
+              onClick={() =>
+                handleNavClick(menuItems.find((i) => i.id === "join-us"))
+              }
               className="bg-araina-pink hover:bg-araina-pink/90 text-araina-white text-xs uppercase tracking-widest font-semibold px-6 py-3 rounded-full transition-all duration-300 transform hover:-translate-y-[2px] active:translate-y-0 shadow-md hover:shadow-lg shadow-araina-pink/20"
             >
               Join Us
@@ -175,10 +187,11 @@ const Navbar = ({ activeSection, setActiveSection }) => {
 
       {/* ==================== MOBILE DRAWER ==================== */}
       <div
-        className={`fixed inset-0 z-40 bg-araina-white transition-all duration-500 lg:hidden flex flex-col justify-center px-8 ${isOpen
-          ? "opacity-100 pointer-events-auto translate-x-0"
-          : "opacity-0 pointer-events-none translate-x-full"
-          }`}
+        className={`fixed inset-0 z-40 bg-araina-white transition-all duration-500 lg:hidden flex flex-col justify-center px-8 ${
+          isOpen
+            ? "opacity-100 pointer-events-auto translate-x-0"
+            : "opacity-0 pointer-events-none translate-x-full"
+        }`}
       >
         <div className="flex flex-col gap-6 text-center">
           {menuItems.map((item, idx) => {
@@ -190,11 +203,15 @@ const Navbar = ({ activeSection, setActiveSection }) => {
                 style={{
                   transitionDelay: isOpen ? `${idx * 50}ms` : "0ms",
                 }}
-                className={`text-lg uppercase tracking-widest font-semibold transition-all duration-300 ${active
-                  ? "text-araina-pink scale-105"
-                  : "text-araina-black/80 hover:text-araina-pink"
-                  } ${isOpen ? "translate-y-0 opacity-100" : "translate-y-4 opacity-0"
-                  }`}
+                className={`text-lg uppercase tracking-widest font-semibold transition-all duration-300 ${
+                  active
+                    ? "text-araina-pink scale-105"
+                    : "text-araina-black/80 hover:text-araina-pink"
+                } ${
+                  isOpen
+                    ? "translate-y-0 opacity-100"
+                    : "translate-y-4 opacity-0"
+                }`}
               >
                 {item.name}
               </button>
@@ -202,11 +219,14 @@ const Navbar = ({ activeSection, setActiveSection }) => {
           })}
 
           <div
-            className={`mt-8 ${isOpen ? "translate-y-0 opacity-100" : "translate-y-4 opacity-0"
-              } transition-all duration-500 delay-300`}
+            className={`mt-8 ${
+              isOpen ? "translate-y-0 opacity-100" : "translate-y-4 opacity-0"
+            } transition-all duration-500 delay-300`}
           >
             <button
-              onClick={() => handleNavClick(menuItems.find((i) => i.id === "join-us"))}
+              onClick={() =>
+                handleNavClick(menuItems.find((i) => i.id === "join-us"))
+              }
               className="bg-araina-pink hover:bg-araina-pink/90 text-araina-white text-xs uppercase tracking-widest font-semibold px-10 py-4 rounded-full transition-all duration-300 shadow-md hover:shadow-lg shadow-araina-pink/20"
             >
               Join Us
