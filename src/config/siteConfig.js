@@ -5,17 +5,17 @@
  */
 
 export const COMPANY_INFO = {
-  name: "Royo India LLP",
+  name: "Royo Essentials LLP",
   brand: "ARAINA",
   tagline: "Empowering To Rise",
   description:
-    "Royo India LLP is a purpose-driven platform for women's health, wellness, education, and opportunity.",
+    "Royo Essentials LLP is a purpose-driven platform for women's health, wellness, education, and opportunity.",
   detailedDescription:
-    "Royo India LLP is a purpose-driven health, wellness, and personal-care company focused on bringing together women's health, menstrual wellness, education, entrepreneurship, and empowerment.",
+    "Royo Essentials LLP is a purpose-driven health, wellness, and personal-care company focused on bringing together women's health, menstrual wellness, education, entrepreneurship, and empowerment.",
   email: "care@arainas.com",
-  phone: "+91 98765 43210",
-  whatsappNumber: "919876543210",
-  address: "Pune, Maharastra, India",
+  phone: "+91 8006345123",
+  whatsappNumber: "918006345123",
+  address: "Bramhavrunda Colony, Pimple Nilakh, Pune - 411027",
   businessHours: "Mon - Sat: 9:00 AM - 6:00 PM IST",
 };
 

@@ -249,7 +249,6 @@ const ProductsPage = () => {
                   <span className="text-[10px] uppercase font-bold tracking-widest text-araina-pink bg-araina-pink/10 px-3 py-1 rounded-full">
                     {layer.num}
                   </span>
-                  <Layers size={18} className="text-araina-blue" />
                 </div>
                 <h4 className="text-sm font-bold text-araina-black mb-2">
                   {layer.title}
@@ -315,10 +314,10 @@ const ProductsPage = () => {
                   </div>
                   <div className="p-4 flex justify-between">
                     <span className="font-semibold text-araina-black/70">
-                      Manufacturer / Company
+                      Marketing Company
                     </span>
                     <span className="font-light text-araina-black">
-                      Royo India LLP
+                      Royo Essentials LLP
                     </span>
                   </div>
                   <div className="p-4 flex justify-between">

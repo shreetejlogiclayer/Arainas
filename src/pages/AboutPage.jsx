@@ -107,7 +107,7 @@ const AboutPage = () => {
                 transition={{ duration: 0.6 }}
                 className="inline-block text-xs font-bold uppercase tracking-[0.25em] text-araina-pink bg-araina-pink/10 px-4 py-2 rounded-full mb-6"
               >
-                About Royo India LLP & ARAINA
+                About Royo Essentials LLP & ARAINA
               </motion.span>
 
               <motion.h1
@@ -218,8 +218,8 @@ const AboutPage = () => {
                   That question became the foundation of our vision. We wanted
                   to bring better care for women's health together with
                   meaningful opportunities for women to learn, grow, and become
-                  financially stronger. That led to the creation of Royo India
-                  LLP and Araina as our flagship brand.
+                  financially stronger. That led to the creation of Royo
+                  Essentials LLP and Araina as our flagship brand.
                 </p>
               </div>
             </div>

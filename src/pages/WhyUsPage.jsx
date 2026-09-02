@@ -282,7 +282,7 @@ const WhyUsPage = () => {
                   confidence, dignity, and choice."
                 </h3>
                 <p className="text-xs sm:text-sm font-light text-white/90 leading-relaxed mb-8">
-                  Royo India LLP is committed to creating products and
+                  Royo Essentials LLP is committed to creating products and
                   opportunities that build long-term value for women, families,
                   and society.
                 </p>
