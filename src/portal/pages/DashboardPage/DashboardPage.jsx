@@ -62,7 +62,7 @@ const DashboardPage = () => {
         {/* Action Buttons */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-12">
           <button
-            onClick={() => navigate("/portal/order")}
+            onClick={() => navigate("/portal/orders")}
             className="bg-araina-pink hover:bg-araina-pink/90 text-araina-white uppercase text-sm font-semibold tracking-widest py-4 rounded-lg transition-all shadow-md hover:shadow-lg"
           >
             Place New Order
