@@ -1,0 +1,331 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ==================== USER MODEL ====================
+model User {
+  id                    String   @id @default(cuid())
+  email                 String   @unique @db.VarChar(255)
+  mobile                String   @unique @db.VarChar(20)
+  passwordHash          String   @db.VarChar(255)
+  role                  String   @default("user") @db.VarChar(50)
+  emailVerified         Boolean  @default(false)
+  mobileVerified        Boolean  @default(false)
+  status                String   @default("active") @db.VarChar(50) // active, suspended, deleted
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  // Relations
+  profile               Profile?
+  addresses             Address[]
+  aadhaarVerification   AadhaarVerification?
+  photos                UserPhoto[]
+  referralsSent         Referral[]           @relation("referrer")
+  referralsReceived     Referral[]           @relation("referred")
+  coupons               Coupon[]
+  orders                Order[]
+  passwordResetTokens   PasswordResetToken[]
+
+  @@index([email])
+  @@index([mobile])
+  @@index([status])
+}
+
+// ==================== PROFILE MODEL ====================
+model Profile {
+  id                      String   @id @default(cuid())
+  userId                  String   @unique
+  fullName                String   @db.VarChar(255)
+  alternateMobile         String?  @db.VarChar(20)
+  referralCode            String   @unique @db.VarChar(50)
+  referredByCode          String?  @db.VarChar(50)
+  photoKeyReference       String?  @db.VarChar(255)
+  aadhaarVerificationStatus String @default("unverified") @db.VarChar(50) // unverified, pending, verified, failed
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
+
+  // Relations
+  user                    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([referralCode])
+  @@index([referredByCode])
+}
+
+// ==================== ADDRESS MODEL ====================
+model Address {
+  id              String   @id @default(cuid())
+  userId          String
+  houseNumber     String   @db.VarChar(100)
+  building        String?  @db.VarChar(100)
+  street          String   @db.VarChar(255)
+  area            String   @db.VarChar(100)
+  landmark        String?  @db.VarChar(100)
+  village         String?  @db.VarChar(100)
+  city            String   @db.VarChar(100)
+  district        String   @db.VarChar(100)
+  state           String   @db.VarChar(100)
+  pinCode         String   @db.VarChar(6)
+  country         String   @default("India") @db.VarChar(100)
+  isDefault       Boolean  @default(false)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Relations
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([isDefault])
+}
+
+// ==================== AADHAAR VERIFICATION MODEL ====================
+model AadhaarVerification {
+  id                    String   @id @default(cuid())
+  userId                String   @unique
+  aadhaarLast4          String   @db.VarChar(4)
+  verificationStatus    String   @default("unverified") @db.VarChar(50) // unverified, otp_sent, verified
+  otpRequestedAt        DateTime?
+  verifiedAt            DateTime?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  // Relations
+  user                  User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+// ==================== USER PHOTO MODEL ====================
+model UserPhoto {
+  id              String   @id @default(cuid())
+  userId          String
+  storageKey      String   @db.VarChar(255) // Path or reference to storage
+  verifiedAt      DateTime?
+  createdAt       DateTime @default(now())
+
+  // Relations
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+// ==================== REFERRAL MODEL ====================
+model Referral {
+  id                String   @id @default(cuid())
+  referrerUserId    String
+  referredUserId    String
+  referralCodeUsed  String   @db.VarChar(50)
+  status            String   @default("pending") @db.VarChar(50) // pending, completed, expired
+  completedAt       DateTime?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  // Relations
+  referrer          User     @relation("referrer", fields: [referrerUserId], references: [id], onDelete: Cascade)
+  referred          User     @relation("referred", fields: [referredUserId], references: [id], onDelete: Cascade)
+
+  @@unique([referrerUserId, referredUserId])
+  @@index([referrerUserId])
+  @@index([referredUserId])
+  @@index([status])
+}
+
+// ==================== COUPON MODEL ====================
+model Coupon {
+  id              String   @id @default(cuid())
+  userId          String
+  code            String   @unique @db.VarChar(50)
+  discountType    String   @db.VarChar(50) // flat, percentage
+  discountValue   Int // Value in rupees (if flat) or percentage
+  status          String   @default("available") @db.VarChar(50) // available, used, expired
+  source          String   @default("referral") @db.VarChar(50) // referral, promotion, etc.
+  orderId         String?  // Order where coupon was used
+  createdAt       DateTime @default(now())
+  usedAt          DateTime?
+  expiresAt       DateTime?
+  updatedAt       DateTime @updatedAt
+
+  // Relations
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([code])
+  @@index([status])
+}
+
+// ==================== PRODUCT MODEL ====================
+model Product {
+  id              String   @id @default(cuid())
+  name            String   @unique @db.VarChar(255)
+  description     String?  @db.Text
+  sku             String?  @unique @db.VarChar(100)
+  active          Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Relations
+  variants        ProductVariant[]
+  pricingTiers    PricingTier[]
+
+  @@index([active])
+}
+
+// ==================== PRODUCT VARIANT MODEL ====================
+model ProductVariant {
+  id              String   @id @default(cuid())
+  productId       String
+  name            String   @db.VarChar(100)
+  description     String?  @db.Text
+  active          Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Relations
+  product         Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([productId, name])
+  @@index([productId])
+}
+
+// ==================== PRICING TIER MODEL ====================
+model PricingTier {
+  id              String   @id @default(cuid())
+  productId       String
+  boxes           Int
+  pricePerBox     Int // Price in rupees
+  active          Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Relations
+  product         Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([productId, boxes])
+  @@index([productId])
+}
+
+// ==================== ORDER MODEL ====================
+model Order {
+  id              String   @id @default(cuid())
+  orderNumber     String   @unique @db.VarChar(50)
+  userId          String
+  
+  // Ordered By Information
+  orderedByName   String   @db.VarChar(255)
+  
+  // Delivered To Information
+  deliveryRecipientName String @db.VarChar(255)
+  
+  // Pricing
+  subtotal        Int // Amount in rupees
+  discount        Int @default(0)
+  total           Int
+  
+  // Coupon
+  couponId        String?
+  
+  // Payment & Status
+  paymentStatus   String   @default("not_configured") @db.VarChar(50) // not_configured, pending, success, failed
+  orderStatus     String   @default("pending") @db.VarChar(50) // pending, processing, shipped, delivered, cancelled
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Relations
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items           OrderItem[]
+  deliveryAddress OrderAddress?
+  payment         Payment?
+
+  @@index([userId])
+  @@index([orderNumber])
+  @@index([paymentStatus])
+  @@index([orderStatus])
+}
+
+// ==================== ORDER ITEM MODEL ====================
+model OrderItem {
+  id              String   @id @default(cuid())
+  orderId         String
+  
+  // Product Snapshots (captured at time of order)
+  productNameSnapshot String @db.VarChar(255)
+  sizeSnapshot    String   @db.VarChar(100)
+  quantityBoxes   Int
+  pricePerBoxSnapshot Int
+  subtotal        Int
+  
+  createdAt       DateTime @default(now())
+
+  // Relations
+  order           Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
+}
+
+// ==================== ORDER ADDRESS MODEL ====================
+model OrderAddress {
+  id              String   @id @default(cuid())
+  orderId         String   @unique
+  
+  // Address Snapshot
+  houseNumber     String   @db.VarChar(100)
+  building        String?  @db.VarChar(100)
+  street          String   @db.VarChar(255)
+  area            String   @db.VarChar(100)
+  landmark        String?  @db.VarChar(100)
+  village         String?  @db.VarChar(100)
+  city            String   @db.VarChar(100)
+  district        String   @db.VarChar(100)
+  state           String   @db.VarChar(100)
+  pinCode         String   @db.VarChar(6)
+  country         String   @default("India") @db.VarChar(100)
+  
+  createdAt       DateTime @default(now())
+
+  // Relations
+  order           Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
+}
+
+// ==================== PAYMENT MODEL ====================
+model Payment {
+  id              String   @id @default(cuid())
+  orderId         String   @unique
+  status          String   @default("pending") @db.VarChar(50) // pending, success, failed, refunded
+  provider        String   @db.VarChar(50) // razorpay, cashfree, etc.
+  transactionId   String?  @db.VarChar(255)
+  amount          Int // Amount in rupees
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Relations
+  order           Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
+  @@index([transactionId])
+}
+
+// ==================== PASSWORD RESET TOKEN MODEL ====================
+model PasswordResetToken {
+  id              String   @id @default(cuid())
+  userId          String
+  token           String   @unique @db.VarChar(255)
+  expiresAt       DateTime
+  createdAt       DateTime @default(now())
+
+  // Relations
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([token])
+}

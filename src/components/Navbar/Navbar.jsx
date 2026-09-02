@@ -144,42 +144,8 @@ const Navbar = ({ activeSection, setActiveSection }) => {
   // ==================== JOIN US BUTTON ====================
   const handleJoinUsClick = () => {
     setIsOpen(false);
-
-    const joinUsSection = document.getElementById("join-us");
-
-    if (location.pathname !== "/") {
-      navigate("/");
-
-      setTimeout(() => {
-        const element = document.getElementById("join-us");
-
-        if (element) {
-          const offset = 75;
-          const bodyRect = document.body.getBoundingClientRect().top;
-          const elementRect = element.getBoundingClientRect().top;
-          const elementPosition = elementRect - bodyRect;
-
-          window.scrollTo({
-            top: elementPosition - offset,
-            behavior: "smooth",
-          });
-        }
-      }, 150);
-    } else if (joinUsSection) {
-      const offset = 75;
-      const bodyRect = document.body.getBoundingClientRect().top;
-      const elementRect = joinUsSection.getBoundingClientRect().top;
-      const elementPosition = elementRect - bodyRect;
-
-      window.scrollTo({
-        top: elementPosition - offset,
-        behavior: "smooth",
-      });
-    }
-
-    if (setActiveSection) {
-      setActiveSection("join-us");
-    }
+    // Open Araina User Portal in a new tab
+    window.open("/portal/login", "_blank", "noopener,noreferrer");
   };
 
   return (
