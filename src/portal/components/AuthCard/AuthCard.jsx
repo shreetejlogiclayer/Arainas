@@ -27,7 +27,7 @@ const AuthCard = ({
           <img
             src="/assets/logo/araina-logo-dark.png"
             alt="ARAINA"
-            className="h-16 w-auto object-contain"
+            className="h-20 w-auto object-contain"
           />
         </div>
 

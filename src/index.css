@@ -3,12 +3,12 @@
 @tailwind utilities;
 
 :root {
-  --araina-pink: #EF5F7D;
-  --araina-blue: #6CADBA;
-  --araina-white: #FFFFFF;
+  --araina-pink: #ef5f7d;
+  --araina-blue: #6cadba;
+  --araina-white: #ffffff;
   --araina-black: #000000;
-  
-  --font-unbounded: 'Unbounded', sans-serif;
+
+  --font-unbounded: "Unbounded", sans-serif;
 }
 
 /* Custom Scrollbar */
@@ -37,6 +37,19 @@ body {
   font-family: var(--font-unbounded);
 }
 
+.butterfly-background::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: url("/assets/images/Butterfly_Bg_1.jpeg") center / cover no-repeat;
+  opacity: 0.65;
+  pointer-events: none;
+}
+
+.section-divider {
+  border-top: 2px solid rgba(239, 95, 125, 0.2);
+}
+
 /* Accessibility: Support prefers-reduced-motion */
 @media (prefers-reduced-motion: reduce) {
   * {
@@ -50,7 +63,8 @@ body {
 
 /* Utility animations */
 @keyframes float {
-  0%, 100% {
+  0%,
+  100% {
     transform: translateY(0);
   }
   50% {

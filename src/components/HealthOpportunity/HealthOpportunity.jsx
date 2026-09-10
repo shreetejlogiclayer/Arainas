@@ -1,37 +1,44 @@
-import React from 'react';
-import { motion } from 'framer-motion';
-import { Activity, ShieldCheck, HeartHandshake, Banknote, Home, Users } from 'lucide-react';
+import React from "react";
+import { motion } from "framer-motion";
+import {
+  Activity,
+  ShieldCheck,
+  HeartHandshake,
+  Banknote,
+  Home,
+  Users,
+} from "lucide-react";
 
 const HealthOpportunity = () => {
   const steps = [
     {
-      title: 'Better Health',
-      desc: 'Quality feminine care and menstrual hygiene awareness as the essential foundation.',
+      title: "Better Health",
+      desc: "Quality feminine care and menstrual hygiene awareness as the essential foundation.",
       icon: Activity,
     },
     {
-      title: 'Greater Confidence',
-      desc: 'Approaching everyday life and choices with comfort, free from fear or limitations.',
+      title: "Greater Confidence",
+      desc: "Approaching everyday life and choices with comfort, free from fear or limitations.",
       icon: ShieldCheck,
     },
     {
-      title: 'Meaningful Opportunity',
-      desc: 'Flexible business platforms that allow women to learn and grow at their own pace.',
+      title: "Meaningful Opportunity",
+      desc: "Flexible business platforms that allow women to learn and grow at their own pace.",
       icon: HeartHandshake,
     },
     {
-      title: 'Financial Independence',
-      desc: 'Developing skills, earning with dignity, and taking control of their own futures.',
+      title: "Financial Independence",
+      desc: "Developing skills, earning with dignity, and taking control of their own futures.",
       icon: Banknote,
     },
     {
-      title: 'Stronger Families',
-      desc: 'When a woman is empowered, she strengthens her household and sets a new example.',
+      title: "Stronger Families",
+      desc: "When a woman is empowered, she strengthens her household and sets a new example.",
       icon: Home,
     },
     {
-      title: 'Stronger Communities',
-      desc: 'Progress that inspires others, turning individual growth into collective upliftment.',
+      title: "Stronger Communities",
+      desc: "Progress that inspires others, turning individual growth into collective upliftment.",
       icon: Users,
     },
   ];
@@ -51,14 +58,14 @@ const HealthOpportunity = () => {
     visible: {
       opacity: 1,
       y: 0,
-      transition: { duration: 0.6, ease: 'easeOut' },
+      transition: { duration: 0.6, ease: "easeOut" },
     },
   };
 
   return (
     <section
       id="opportunity-flow"
-      className="py-24 bg-gradient-to-t from-araina-white to-araina-blue/5 relative overflow-hidden"
+      className="py-24 bg-gradient-to-t from-araina-white to-araina-blue/5 relative overflow-hidden butterfly-background section-divider"
     >
       <div className="absolute top-1/2 left-0 right-0 h-[2px] bg-gradient-to-r from-araina-pink/10 via-araina-blue/10 to-araina-pink/10 pointer-events-none hidden lg:block -translate-y-12" />
 
@@ -71,7 +78,8 @@ const HealthOpportunity = () => {
             Health Meets Opportunity
           </h2>
           <p className="text-sm sm:text-base text-araina-black/60 font-light">
-            We see women's wellness and women's financial growth as a single connected path. When one woman rises, she lifts everyone around her.
+            We see women's wellness and women's financial growth as a single
+            connected path. When one woman rises, she lifts everyone around her.
           </p>
         </div>
 
@@ -80,7 +88,7 @@ const HealthOpportunity = () => {
           variants={containerVariants}
           initial="hidden"
           whileInView="visible"
-          viewport={{ once: true, margin: '-100px' }}
+          viewport={{ once: true, margin: "-100px" }}
           className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-8 relative"
         >
           {steps.map((step, idx) => {
@@ -95,10 +103,10 @@ const HealthOpportunity = () => {
                 <div className="relative mb-6">
                   {/* Outer animated border rings */}
                   <div className="absolute -inset-2 bg-gradient-to-tr from-araina-pink to-araina-blue rounded-full opacity-0 group-hover:opacity-100 group-hover:scale-110 transition-all duration-500 blur-[2px]" />
-                  
+
                   <div className="relative w-16 h-16 bg-araina-white border border-araina-pink/20 rounded-full flex items-center justify-center text-araina-pink shadow-sm transition-transform duration-500 group-hover:scale-105 group-hover:text-araina-blue">
                     <Icon size={24} />
-                    
+
                     {/* Index tag */}
                     <span className="absolute -top-1 -right-1 bg-araina-pink text-araina-white text-[9px] font-bold rounded-full w-5 h-5 flex items-center justify-center">
                       0{idx + 1}

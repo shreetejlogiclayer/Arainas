@@ -5,7 +5,7 @@ const OurStory = () => {
   return (
     <section
       id="our-story"
-      className="py-24 bg-araina-white relative overflow-hidden"
+      className="py-24 bg-araina-white relative overflow-hidden butterfly-background section-divider"
     >
       <div className="max-w-7xl mx-auto px-6 relative z-10">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-16 items-center">

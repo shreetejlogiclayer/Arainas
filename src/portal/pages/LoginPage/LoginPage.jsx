@@ -90,7 +90,7 @@ const LoginPage = () => {
 
   return (
     <AuthCard
-      title="Welcome Back"
+      title="Welcome"
       subtitle="Sign in to your Araina account to continue"
       isLoading={isLoading}
     >

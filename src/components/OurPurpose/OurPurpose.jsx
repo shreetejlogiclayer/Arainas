@@ -1,11 +1,11 @@
-import React from 'react';
-import { motion } from 'framer-motion';
+import React from "react";
+import { motion } from "framer-motion";
 
 const OurPurpose = () => {
   return (
     <section
       id="purpose"
-      className="py-32 bg-gradient-to-tr from-araina-pink via-araina-pink/90 to-araina-blue/90 text-araina-white relative overflow-hidden"
+      className="py-32 bg-gradient-to-tr from-araina-pink via-araina-pink/90 to-araina-blue/90 text-araina-white relative overflow-hidden section-divider"
     >
       {/* Abstract light blobs */}
       <div className="absolute top-0 left-0 w-full h-full bg-black/10 z-0" />
@@ -16,7 +16,7 @@ const OurPurpose = () => {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, margin: '-100px' }}
+          viewport={{ once: true, margin: "-100px" }}
           transition={{ duration: 0.8 }}
           className="mb-8"
         >
@@ -29,7 +29,7 @@ const OurPurpose = () => {
           <motion.h3
             initial={{ opacity: 0, y: 40 }}
             whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: '-100px' }}
+            viewport={{ once: true, margin: "-100px" }}
             transition={{ duration: 0.8, delay: 0.1 }}
             className="text-4xl sm:text-6xl lg:text-7xl font-extrabold tracking-tight"
           >
@@ -39,7 +39,7 @@ const OurPurpose = () => {
           <motion.h3
             initial={{ opacity: 0, y: 40 }}
             whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: '-100px' }}
+            viewport={{ once: true, margin: "-100px" }}
             transition={{ duration: 0.8, delay: 0.3 }}
             className="text-4xl sm:text-6xl lg:text-7xl font-extrabold tracking-tight text-araina-white/90"
           >
@@ -49,7 +49,7 @@ const OurPurpose = () => {
           <motion.h3
             initial={{ opacity: 0, y: 40 }}
             whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: '-100px' }}
+            viewport={{ once: true, margin: "-100px" }}
             transition={{ duration: 0.8, delay: 0.5 }}
             className="text-4xl sm:text-6xl lg:text-7xl font-extrabold tracking-tight text-araina-white/70"
           >
@@ -60,11 +60,12 @@ const OurPurpose = () => {
         <motion.p
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, margin: '-100px' }}
+          viewport={{ once: true, margin: "-100px" }}
           transition={{ duration: 0.8, delay: 0.7 }}
           className="mt-12 text-sm sm:text-lg text-araina-white/95 max-w-xl mx-auto font-light leading-relaxed"
         >
-          This is the core foundation that guides the products we create, the platform we build, and the community we support.
+          This is the core foundation that guides the products we create, the
+          platform we build, and the community we support.
         </motion.p>
       </div>
     </section>

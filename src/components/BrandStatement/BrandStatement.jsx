@@ -5,7 +5,7 @@ const BrandStatement = () => {
   return (
     <section
       id="about"
-      className="py-24 sm:py-32 bg-araina-white relative overflow-hidden"
+      className="py-24 sm:py-32 bg-araina-white relative overflow-hidden butterfly-background section-divider"
     >
       {/* Decorative vertical lines */}
       <div className="absolute top-0 bottom-0 left-1/4 w-[1px] bg-araina-pink/5 hidden md:block" />

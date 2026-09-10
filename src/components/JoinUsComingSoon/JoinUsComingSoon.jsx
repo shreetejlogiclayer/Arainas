@@ -1,45 +1,44 @@
-import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Sparkles, ArrowRight, CheckCircle2 } from 'lucide-react';
+import React, { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Sparkles, ArrowRight, CheckCircle2 } from "lucide-react";
 
 const JoinUsComingSoon = () => {
-  const [email, setEmail] = useState('');
+  const [email, setEmail] = useState("");
   const [isSubmitted, setIsSubmitted] = useState(false);
 
   const audience = [
-    'Homemakers looking to start something of their own',
-    'Women returning after a career break',
-    'Working women seeking an additional entrepreneurial opportunity',
-    'Women who want to build business and digital skills',
-    'Women interested in women\'s wellness and community'
+    "Homemakers looking to start something of their own",
+    "Women returning after a career break",
+    "Working women seeking an additional entrepreneurial opportunity",
+    "Women who want to build business and digital skills",
+    "Women interested in women's wellness and community",
   ];
 
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!email) return;
-    
+
     // Completely frontend-only state transition (No backend connection)
     setIsSubmitted(true);
-    setEmail('');
+    setEmail("");
   };
 
   return (
     <section
       id="join-us"
-      className="py-24 bg-araina-white relative overflow-hidden border-t border-araina-pink/5"
+      className="py-24 bg-araina-white relative overflow-hidden butterfly-background section-divider"
     >
       <div className="absolute top-1/3 left-10 w-72 h-72 bg-araina-pink/5 rounded-full blur-3xl pointer-events-none" />
       <div className="absolute bottom-10 right-10 w-72 h-72 bg-araina-blue/5 rounded-full blur-3xl pointer-events-none" />
 
       <div className="max-w-7xl mx-auto px-6 relative z-10">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-16 items-center">
-          
           {/* Information block */}
           <div className="lg:col-span-7">
             <motion.div
               initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, margin: '-100px' }}
+              viewport={{ once: true, margin: "-100px" }}
               transition={{ duration: 0.8 }}
             >
               <span className="text-[10px] uppercase font-bold tracking-[0.3em] text-araina-pink block mb-4">
@@ -49,7 +48,11 @@ const JoinUsComingSoon = () => {
                 Join Us
               </h2>
               <p className="text-sm sm:text-base text-araina-black/70 font-light leading-relaxed mb-8">
-                We believe women's health and women's financial independence both matter. Through the upcoming Araina Women's Opportunity, we aim to create a supportive pathway for women who want to explore entrepreneurship, learn new skills, and connect within an encouraging community.
+                We believe women's health and women's financial independence
+                both matter. Through the upcoming Araina Women's Opportunity, we
+                aim to create a supportive pathway for women who want to explore
+                entrepreneurship, learn new skills, and connect within an
+                encouraging community.
               </p>
             </motion.div>
 
@@ -57,7 +60,7 @@ const JoinUsComingSoon = () => {
             <motion.div
               initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, margin: '-100px' }}
+              viewport={{ once: true, margin: "-100px" }}
               transition={{ duration: 0.8, delay: 0.2 }}
             >
               <h4 className="text-xs uppercase font-bold tracking-widest text-araina-black mb-4">
@@ -84,7 +87,7 @@ const JoinUsComingSoon = () => {
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
               whileInView={{ opacity: 1, scale: 1 }}
-              viewport={{ once: true, margin: '-100px' }}
+              viewport={{ once: true, margin: "-100px" }}
               transition={{ duration: 0.8 }}
               className="bg-araina-white border border-araina-pink/10 rounded-3xl p-8 sm:p-10 shadow-lg relative"
             >
@@ -108,7 +111,9 @@ const JoinUsComingSoon = () => {
                       Something meaningful is coming.
                     </h3>
                     <p className="text-xs sm:text-sm text-araina-black/60 font-light leading-relaxed mb-8">
-                      Opportunities, training programs, and community participation will be introduced in the future. Leave your email to receive early updates when we launch.
+                      Opportunities, training programs, and community
+                      participation will be introduced in the future. Leave your
+                      email to receive early updates when we launch.
                     </p>
 
                     <form onSubmit={handleSubmit} className="space-y-4">
@@ -146,7 +151,8 @@ const JoinUsComingSoon = () => {
                       You're on the list!
                     </h3>
                     <p className="text-xs sm:text-sm text-araina-black/60 font-light leading-relaxed mb-6">
-                      Thank you for your interest in Araina. We will keep you updated as we take steps forward to empower women to rise.
+                      Thank you for your interest in Araina. We will keep you
+                      updated as we take steps forward to empower women to rise.
                     </p>
                     <button
                       onClick={() => setIsSubmitted(false)}
@@ -159,7 +165,6 @@ const JoinUsComingSoon = () => {
               </AnimatePresence>
             </motion.div>
           </div>
-
         </div>
       </div>
     </section>

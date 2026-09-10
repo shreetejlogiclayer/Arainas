@@ -30,7 +30,7 @@ const ProductShowcase = () => {
   return (
     <section
       id="product"
-      className="py-24 bg-araina-white relative overflow-hidden border-t border-araina-pink/5"
+      className="py-24 bg-araina-white relative overflow-hidden butterfly-background section-divider"
     >
       <div className="max-w-7xl mx-auto px-6 relative z-10">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-16 items-center">

@@ -21,7 +21,7 @@ const FinalCTA = () => {
   };
 
   return (
-    <section className="py-24 bg-gradient-to-b from-araina-white via-araina-pink/5 to-araina-blue/10 relative overflow-hidden">
+    <section className="py-24 bg-gradient-to-b from-araina-white via-araina-pink/5 to-araina-blue/10 relative overflow-hidden butterfly-background section-divider">
       <div className="max-w-4xl mx-auto px-6 relative z-10 text-center">
         <motion.div
           initial={{ opacity: 0, y: 30 }}
