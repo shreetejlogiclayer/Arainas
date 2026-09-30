@@ -158,8 +158,8 @@ const AboutPage = () => {
                 className="relative rounded-3xl overflow-hidden border border-araina-pink/15 shadow-xl group"
               >
                 <img
-                  src="/assets/images/araina_about_hero.jpg"
-                  alt="Empowered confident women representing ARAINA values"
+                  src="/assets/images/About_Page_Image-removebg-preview.png"
+                  alt="Women rising together through health and opportunity"
                   className="w-full h-auto object-cover transform group-hover:scale-105 transition-transform duration-700"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-araina-black/60 via-transparent to-transparent opacity-80" />
@@ -276,11 +276,13 @@ const AboutPage = () => {
             {/* Mission Card */}
             <div className="bg-araina-white border border-araina-pink/15 rounded-3xl p-8 sm:p-10 shadow-sm relative flex flex-col justify-between">
               <div>
-                <img
-                  src="/assets/images/Misson-removebg-preview.png"
-                  alt=""
-                  className="mb-6 h-40 w-40 object-contain"
-                />
+                <div className="mb-6 h-40">
+                  <img
+                    src="/assets/images/Misson-removebg-preview.png"
+                    alt=""
+                    className="h-40 w-40 object-contain"
+                  />
+                </div>
                 <span className="text-[10px] uppercase font-bold tracking-[0.25em] text-araina-pink block mb-2">
                   What We Do
                 </span>
@@ -325,11 +327,13 @@ const AboutPage = () => {
             {/* Vision Card */}
             <div className="bg-araina-white border border-araina-blue/15 rounded-3xl p-8 sm:p-10 shadow-sm relative flex flex-col justify-between">
               <div>
-                <img
-                  src="/assets/images/Vision-removebg-preview.png"
-                  alt=""
-                  className="mb-6 h-40 w-40 object-contain"
-                />
+                <div className="mb-6 h-40">
+                  <img
+                    src="/assets/images/Vision-removebg-preview.png"
+                    alt=""
+                    className="h-32 w-32 object-contain"
+                  />
+                </div>
                 <span className="text-[10px] uppercase font-bold tracking-[0.25em] text-araina-blue block mb-2">
                   Where We Are Heading
                 </span>
@@ -423,7 +427,7 @@ const AboutPage = () => {
                 <img
                   src={item.image}
                   alt=""
-                  className="mb-4 h-36 w-36 object-contain"
+                  className="mx-auto mb-4 block h-36 w-36 object-contain"
                 />
                 <h4 className="text-base font-bold mb-2 text-araina-black">
                   {item.title}

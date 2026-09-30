@@ -105,6 +105,26 @@ const ProductsPage = () => {
     },
   ];
 
+  const productFeatureImages = [
+    {
+      title: "Ultra-Thin & Highly Absorbent",
+      src: "/assets/images/Ultra Thin & Highly absorbent.png",
+    },
+    {
+      title: "Quick Absorption",
+      src: "/assets/images/quick absorption.png",
+    },
+    {
+      title: "Moisture Lock Dry Feel",
+      src: "/assets/images/moisture lock dry feel.png",
+    },
+    { title: "Odour Free", src: "/assets/images/odour free.png" },
+    {
+      title: "Premium Quality",
+      src: "/assets/images/premium quality (1).png",
+    },
+  ];
+
   return (
     <div className="pt-0 pb-20 min-h-screen bg-araina-white text-araina-black">
       {/* ==================== HERO SECTION ==================== */}
@@ -239,25 +259,70 @@ const ProductsPage = () => {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {layersList.map((layer, idx) => (
-              <div
-                key={idx}
-                className="bg-araina-white border border-araina-pink/10 rounded-2xl p-6 shadow-sm hover:shadow-md hover:border-araina-pink/30 transition-all duration-300"
-              >
-                <div className="flex items-center justify-between mb-4">
-                  <span className="text-[10px] uppercase font-bold tracking-widest text-araina-pink bg-araina-pink/10 px-3 py-1 rounded-full">
-                    {layer.num}
-                  </span>
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-center">
+            <div className="lg:col-span-4 flex justify-center">
+              <img
+                src="/assets/images/pad image.png"
+                alt="Illustration of the sanitary pad's protective layers"
+                className="w-full max-w-sm max-h-[520px] object-contain"
+              />
+            </div>
+
+            <div className="lg:col-span-8 grid grid-cols-1 sm:grid-cols-2 gap-6">
+              {layersList.map((layer, idx) => (
+                <div
+                  key={idx}
+                  className="bg-araina-white border border-araina-pink/10 rounded-2xl p-6 shadow-sm hover:shadow-md hover:border-araina-pink/30 transition-all duration-300"
+                >
+                  <div className="flex items-center justify-between mb-4">
+                    <span className="text-[10px] uppercase font-bold tracking-widest text-araina-pink bg-araina-pink/10 px-3 py-1 rounded-full">
+                      {layer.num}
+                    </span>
+                  </div>
+                  <h4 className="text-sm font-bold text-araina-black mb-2">
+                    {layer.title}
+                  </h4>
+                  <p className="text-xs text-araina-black/65 font-light leading-relaxed">
+                    {layer.desc}
+                  </p>
                 </div>
-                <h4 className="text-sm font-bold text-araina-black mb-2">
-                  {layer.title}
-                </h4>
-                <p className="text-xs text-araina-black/65 font-light leading-relaxed">
-                  {layer.desc}
-                </p>
-              </div>
-            ))}
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="overflow-hidden border-b border-araina-pink/10 py-14">
+        <div className="max-w-7xl mx-auto px-6">
+          <h2 className="text-center text-2xl sm:text-3xl font-bold tracking-tight mb-10">
+            Product Features
+          </h2>
+          <div className="overflow-hidden">
+            <div className="product-feature-marquee flex w-max">
+              {[0, 1].map((copy) => (
+                <div
+                  key={copy}
+                  aria-hidden={copy === 1}
+                  className="flex shrink-0 gap-8 pr-8"
+                >
+                  {productFeatureImages.map((feature) => (
+                    <figure
+                      key={feature.title}
+                      className="flex w-40 shrink-0 flex-col items-center text-center sm:w-48"
+                    >
+                      <img
+                        src={feature.src}
+                        alt=""
+                        className="mb-3 h-28 w-40 object-contain sm:h-32 sm:w-48"
+                      />
+                      <figcaption className="text-xs font-semibold text-araina-black/75">
+                        {feature.title}
+                      </figcaption>
+                    </figure>
+                  ))}
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </section>
@@ -354,6 +419,23 @@ const ProductsPage = () => {
                   </div>
                 </div>
               </div>
+            </div>
+            <div className="col-span-1 mx-auto mt-2 grid w-full max-w-4xl grid-cols-3 items-center justify-items-center gap-6 border-t border-araina-pink/10 pt-8 lg:col-span-12">
+              <img
+                src="/assets/images/ISI mark.png"
+                alt="ISI mark"
+                className="h-20 w-full max-w-48 object-contain opacity-85"
+              />
+              <img
+                src="/assets/images/iso certified.png"
+                alt="ISO certified"
+                className="h-20 w-full max-w-48 object-contain opacity-85"
+              />
+              <img
+                src="/assets/images/non toxic.png"
+                alt="Non-toxic materials"
+                className="h-20 w-full max-w-48 object-contain opacity-85"
+              />
             </div>
           </div>
         </div>

@@ -1,6 +1,6 @@
 import React, { useEffect } from "react";
 import { motion } from "framer-motion";
-import { Users, Check } from "lucide-react";
+import { Check } from "lucide-react";
 import { Link } from "react-router-dom";
 
 const WhyUsPage = () => {
@@ -68,7 +68,8 @@ const WhyUsPage = () => {
     {
       title: "Stronger Communities",
       desc: "Progress that inspires others, turning individual growth into collective upliftment.",
-      icon: Users,
+      image:
+        "/assets/images/10_Community___Collective_Growth-removebg-preview.png",
     },
   ];
 
@@ -158,7 +159,7 @@ const WhyUsPage = () => {
                       <img
                         src={p.image}
                         alt=""
-                        className="mb-6 h-40 w-40 object-contain transition-transform duration-300 group-hover:scale-105"
+                        className="mx-auto mb-6 block h-40 w-40 object-contain transition-transform duration-300 group-hover:scale-105"
                       />
                     ) : (
                       <div className="inline-flex rounded-2xl bg-araina-pink/10 p-4 text-araina-pink transition-all duration-300 group-hover:bg-araina-pink group-hover:text-araina-white">
@@ -211,7 +212,7 @@ const WhyUsPage = () => {
                     <img
                       src={step.image}
                       alt=""
-                      className="mb-4 h-40 w-40 object-contain"
+                      className="mx-auto mb-4 block h-40 w-40 object-contain"
                     />
                   ) : (
                     <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-araina-pink/20 bg-gradient-to-tr from-araina-pink/10 to-araina-blue/10 text-araina-pink">

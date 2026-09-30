@@ -1,6 +1,5 @@
 import React from "react";
 import { motion } from "framer-motion";
-import { Users } from "lucide-react";
 
 const HealthOpportunity = () => {
   const steps = [
@@ -34,7 +33,8 @@ const HealthOpportunity = () => {
     {
       title: "Stronger Communities",
       desc: "Progress that inspires others, turning individual growth into collective upliftment.",
-      icon: Users,
+      image:
+        "/assets/images/10_Community___Collective_Growth-removebg-preview.png",
     },
   ];
 

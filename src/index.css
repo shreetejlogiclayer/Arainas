@@ -94,3 +94,23 @@ body {
 .animate-float {
   animation: float 4s ease-in-out infinite;
 }
+
+@keyframes product-feature-marquee {
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.product-feature-marquee {
+  animation: product-feature-marquee 36s linear infinite;
+}
+
+.product-feature-marquee:hover {
+  animation-play-state: paused;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .product-feature-marquee {
+    animation: none;
+  }
+}

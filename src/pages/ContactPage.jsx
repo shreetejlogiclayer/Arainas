@@ -186,14 +186,11 @@ const ContactPage = () => {
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
             {/* Left Column: Contact Cards & Info */}
             <div className="lg:col-span-5 space-y-8">
-              {/* Image banner */}
-              <div className="rounded-3xl overflow-hidden border border-araina-pink/10 shadow-sm">
-                <img
-                  src="/assets/images/araina_contact_hero.jpg"
-                  alt="ARAINA Support Team Connection"
-                  className="w-full h-auto object-cover hover:scale-105 transition-transform duration-700"
-                />
-              </div>
+              <img
+                src="/assets/images/Contact_Us-removebg-preview.png"
+                alt="Contact ARAINA"
+                className="mx-auto block h-auto w-full max-w-xs object-contain"
+              />
 
               {/* Company Info Box */}
               <div className="bg-gradient-to-br from-araina-pink/5 via-araina-white to-araina-blue/5 border border-araina-pink/15 rounded-3xl p-8 shadow-sm">
