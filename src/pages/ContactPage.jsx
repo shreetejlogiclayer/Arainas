@@ -142,9 +142,9 @@ const ContactPage = () => {
   )}`;
 
   return (
-    <div className="pt-24 pb-20 min-h-screen bg-araina-white text-araina-black">
+    <div className="pt-0 pb-20 min-h-screen bg-araina-white text-araina-black">
       {/* ==================== HERO SECTION ==================== */}
-      <section className="relative py-16 lg:py-24 bg-gradient-to-tr from-araina-white via-araina-pink/5 to-araina-blue/5 overflow-hidden border-b border-araina-pink/10">
+      <section className="relative pt-40 pb-16 lg:pt-48 lg:pb-24 bg-gradient-to-tr from-araina-white via-araina-pink/5 to-araina-blue/5 overflow-hidden border-b border-araina-pink/10">
         <div className="max-w-7xl mx-auto px-6 relative z-10 text-center max-w-3xl mx-auto">
           <motion.span
             initial={{ opacity: 0, y: 20 }}

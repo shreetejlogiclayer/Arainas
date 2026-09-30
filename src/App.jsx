@@ -88,7 +88,9 @@ function App() {
         />
       )}
 
-      <main className="flex-grow">
+      <main
+        className={`flex-grow ${showPublicLayout ? "public-page-background" : ""}`}
+      >
         <Routes>
           {/* ==================== PUBLIC ROUTES ==================== */}
           <Route path="/" element={<HomePage />} />

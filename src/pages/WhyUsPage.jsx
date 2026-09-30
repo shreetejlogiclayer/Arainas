@@ -105,9 +105,9 @@ const WhyUsPage = () => {
   ];
 
   return (
-    <div className="pt-24 pb-20 min-h-screen bg-araina-white text-araina-black">
+    <div className="pt-0 pb-20 min-h-screen bg-araina-white text-araina-black">
       {/* ==================== HERO SECTION ==================== */}
-      <section className="relative py-16 lg:py-24 bg-gradient-to-tr from-araina-white via-araina-pink/5 to-araina-blue/5 overflow-hidden border-b border-araina-pink/10">
+      <section className="relative pt-40 pb-16 lg:pt-48 lg:pb-24 bg-gradient-to-tr from-araina-white via-araina-pink/5 to-araina-blue/5 overflow-hidden border-b border-araina-pink/10">
         <div className="max-w-7xl mx-auto px-6 relative z-10 text-center max-w-3xl mx-auto">
           <motion.span
             initial={{ opacity: 0, y: 20 }}
@@ -299,7 +299,7 @@ const WhyUsPage = () => {
       </section>
 
       {/* ==================== CTA SECTION ==================== */}
-      <section className="py-16 bg-gradient-to-r from-araina-pink via-araina-pink/90 to-araina-blue/90 text-araina-white">
+      <section className="no-butterfly-background py-16 bg-gradient-to-r from-araina-pink via-araina-pink/90 to-araina-blue/90 text-araina-white">
         <div className="max-w-5xl mx-auto px-6 text-center">
           <h2 className="text-3xl sm:text-4xl font-bold mb-4">
             Ready to Experience the Araina Difference?
