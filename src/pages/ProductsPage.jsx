@@ -295,7 +295,7 @@ const ProductsPage = () => {
       <section className="overflow-hidden border-b border-araina-pink/10 py-14">
         <div className="max-w-7xl mx-auto px-6">
           <h2 className="text-center text-2xl sm:text-3xl font-bold tracking-tight mb-10">
-            Product Features
+            Product's Features
           </h2>
           <div className="overflow-hidden">
             <div className="product-feature-marquee flex w-max">
