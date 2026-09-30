@@ -1,16 +1,6 @@
 import React, { useEffect } from "react";
 import { motion } from "framer-motion";
-import {
-  Heart,
-  ShieldCheck,
-  Sparkles,
-  Compass,
-  ArrowRight,
-  Target,
-  Eye,
-  Award,
-  CheckCircle,
-} from "lucide-react";
+import { Sparkles, ArrowRight, CheckCircle } from "lucide-react";
 import { Link } from "react-router-dom";
 import { COMPANY_INFO } from "../config/siteConfig";
 
@@ -76,18 +66,22 @@ const AboutPage = () => {
     {
       title: "Quality Manufacturing",
       desc: "Crafted with clean, touch-free manufacturing methods ensuring safe, skin-friendly feminine hygiene.",
+      image: "/assets/images/Quality_Management-removebg-preview.png",
     },
     {
       title: "Dignity & Respect",
       desc: "Normalizing conversations around menstrual health with dignity and zero fear-based marketing.",
+      image: "/assets/images/Our_Values-removebg-preview.png",
     },
     {
       title: "Entrepreneurial Pathways",
       desc: "Creating accessible, step-by-step learning and income opportunities for women at all stages of life.",
+      image: "/assets/images/Meaningful_opportunity-removebg-preview.png",
     },
     {
       title: "Long-term Impact",
       desc: "Building a sustainable platform that lifts individuals, households, and entire communities.",
+      image: "/assets/images/Our_Commitment-removebg-preview.png",
     },
   ];
 
@@ -282,9 +276,11 @@ const AboutPage = () => {
             {/* Mission Card */}
             <div className="bg-araina-white border border-araina-pink/15 rounded-3xl p-8 sm:p-10 shadow-sm relative flex flex-col justify-between">
               <div>
-                <div className="w-12 h-12 rounded-2xl bg-araina-pink/10 text-araina-pink flex items-center justify-center mb-6">
-                  <Target size={24} />
-                </div>
+                <img
+                  src="/assets/images/Misson-removebg-preview.png"
+                  alt=""
+                  className="mb-6 h-40 w-40 object-contain"
+                />
                 <span className="text-[10px] uppercase font-bold tracking-[0.25em] text-araina-pink block mb-2">
                   What We Do
                 </span>
@@ -329,9 +325,11 @@ const AboutPage = () => {
             {/* Vision Card */}
             <div className="bg-araina-white border border-araina-blue/15 rounded-3xl p-8 sm:p-10 shadow-sm relative flex flex-col justify-between">
               <div>
-                <div className="w-12 h-12 rounded-2xl bg-araina-blue/10 text-araina-blue flex items-center justify-center mb-6">
-                  <Eye size={24} />
-                </div>
+                <img
+                  src="/assets/images/Vision-removebg-preview.png"
+                  alt=""
+                  className="mb-6 h-40 w-40 object-contain"
+                />
                 <span className="text-[10px] uppercase font-bold tracking-[0.25em] text-araina-blue block mb-2">
                   Where We Are Heading
                 </span>
@@ -422,7 +420,11 @@ const AboutPage = () => {
                 key={idx}
                 className="bg-araina-white border border-araina-pink/10 rounded-2xl p-6 shadow-sm"
               >
-                <Award size={24} className="text-araina-pink mb-4" />
+                <img
+                  src={item.image}
+                  alt=""
+                  className="mb-4 h-36 w-36 object-contain"
+                />
                 <h4 className="text-base font-bold mb-2 text-araina-black">
                   {item.title}
                 </h4>

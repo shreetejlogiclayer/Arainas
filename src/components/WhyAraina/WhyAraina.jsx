@@ -1,6 +1,5 @@
 import React, { useState } from "react";
 import { motion } from "framer-motion";
-import { Heart, Sparkles, Shield, Compass } from "lucide-react";
 
 const WhyAraina = () => {
   const [hoveredIdx, setHoveredIdx] = useState(null);
@@ -10,25 +9,25 @@ const WhyAraina = () => {
       title: "Comfort",
       description:
         "Thoughtfully positioned menstrual care designed around women's needs, offering premium softness and breathability.",
-      icon: Heart,
+      image: "/assets/images/Comfort.png",
     },
     {
       title: "Hygiene",
       description:
         "A focus on safe, responsible menstrual care with strict quality standards and touch-free manufacturing practices.",
-      icon: Shield,
+      image: "/assets/images/Hygiene-removebg-preview.png",
     },
     {
       title: "Confidence",
       description:
         "Helping women experience their periods with confidence and comfort, rather than compromise or limitations.",
-      icon: Sparkles,
+      image: "/assets/images/Confidence.png",
     },
     {
       title: "Empowerment",
       description:
         "Connecting women's health with entrepreneurship, learning, and meaningful financial opportunities to rise.",
-      icon: Compass,
+      image: "/assets/images/Empowerment-removebg-preview.png",
     },
   ];
 
@@ -80,18 +79,28 @@ const WhyAraina = () => {
 
                 <div className="relative z-10">
                   {/* Icon Container */}
-                  <div
-                    className={`inline-flex p-4 rounded-xl mb-6 transition-all duration-500 ${
-                      hoveredIdx === idx
-                        ? "bg-araina-pink text-araina-white rotate-6 scale-110"
-                        : "bg-araina-pink/10 text-araina-pink"
-                    }`}
-                  >
-                    <Icon
-                      size={22}
-                      className="transition-transform duration-500"
+                  {pillar.image ? (
+                    <img
+                      src={pillar.image}
+                      alt=""
+                      className={`h-40 w-40 object-contain mb-6 transition-transform duration-500 ${
+                        hoveredIdx === idx ? "rotate-6 scale-110" : ""
+                      }`}
                     />
-                  </div>
+                  ) : (
+                    <div
+                      className={`inline-flex p-4 rounded-xl mb-6 transition-all duration-500 ${
+                        hoveredIdx === idx
+                          ? "bg-araina-pink text-araina-white rotate-6 scale-110"
+                          : "bg-araina-pink/10 text-araina-pink"
+                      }`}
+                    >
+                      <Icon
+                        size={22}
+                        className="transition-transform duration-500"
+                      />
+                    </div>
+                  )}
 
                   <h3
                     className={`text-lg font-bold tracking-wide mb-4 transition-colors duration-300 ${

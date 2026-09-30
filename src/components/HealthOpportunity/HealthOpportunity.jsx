@@ -1,40 +1,35 @@
 import React from "react";
 import { motion } from "framer-motion";
-import {
-  Activity,
-  ShieldCheck,
-  HeartHandshake,
-  Banknote,
-  Home,
-  Users,
-} from "lucide-react";
+import { Users } from "lucide-react";
 
 const HealthOpportunity = () => {
   const steps = [
     {
       title: "Better Health",
       desc: "Quality feminine care and menstrual hygiene awareness as the essential foundation.",
-      icon: Activity,
+      image: "/assets/images/Better_Health-removebg-preview.png",
+      imageClassName: "w-48",
     },
     {
       title: "Greater Confidence",
       desc: "Approaching everyday life and choices with comfort, free from fear or limitations.",
-      icon: ShieldCheck,
+      image: "/assets/images/Greater Confidence.png",
     },
     {
       title: "Meaningful Opportunity",
       desc: "Flexible business platforms that allow women to learn and grow at their own pace.",
-      icon: HeartHandshake,
+      image: "/assets/images/Meaningful_opportunity-removebg-preview.png",
     },
     {
       title: "Financial Independence",
       desc: "Developing skills, earning with dignity, and taking control of their own futures.",
-      icon: Banknote,
+      image: "/assets/images/Financial_Independence-removebg-preview.png",
     },
     {
       title: "Stronger Families",
       desc: "When a woman is empowered, she strengthens her household and sets a new example.",
-      icon: Home,
+      image: "/assets/images/Stronger Families.png",
+      imageClassName: "w-48",
     },
     {
       title: "Stronger Communities",
@@ -99,20 +94,28 @@ const HealthOpportunity = () => {
                 variants={itemVariants}
                 className="flex flex-col items-center text-center group"
               >
-                {/* Icon Container */}
-                <div className="relative mb-6">
-                  {/* Outer animated border rings */}
-                  <div className="absolute -inset-2 bg-gradient-to-tr from-araina-pink to-araina-blue rounded-full opacity-0 group-hover:opacity-100 group-hover:scale-110 transition-all duration-500 blur-[2px]" />
-
-                  <div className="relative w-16 h-16 bg-araina-white border border-araina-pink/20 rounded-full flex items-center justify-center text-araina-pink shadow-sm transition-transform duration-500 group-hover:scale-105 group-hover:text-araina-blue">
-                    <Icon size={24} />
-
-                    {/* Index tag */}
-                    <span className="absolute -top-1 -right-1 bg-araina-pink text-araina-white text-[9px] font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                {step.image ? (
+                  <>
+                    <img
+                      src={step.image}
+                      alt=""
+                      className={`mb-4 h-40 ${step.imageClassName || "w-40"} object-contain transition-transform duration-500 group-hover:scale-105`}
+                    />
+                    <span className="mb-2 flex h-5 w-5 items-center justify-center rounded-full bg-araina-pink text-[9px] font-bold text-araina-white">
                       0{idx + 1}
                     </span>
+                  </>
+                ) : (
+                  <div className="relative mb-6">
+                    <div className="absolute -inset-2 rounded-full bg-gradient-to-tr from-araina-pink to-araina-blue opacity-0 blur-[2px] transition-all duration-500 group-hover:scale-110 group-hover:opacity-100" />
+                    <div className="relative flex h-16 w-16 items-center justify-center rounded-full border border-araina-pink/20 bg-araina-white text-araina-pink shadow-sm transition-transform duration-500 group-hover:scale-105 group-hover:text-araina-blue">
+                      <Icon size={24} />
+                      <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-araina-pink text-[9px] font-bold text-araina-white">
+                        0{idx + 1}
+                      </span>
+                    </div>
                   </div>
-                </div>
+                )}
 
                 {/* Text Details */}
                 <h3 className="text-sm font-bold tracking-wider text-araina-black mb-2 transition-colors duration-300 group-hover:text-araina-pink">

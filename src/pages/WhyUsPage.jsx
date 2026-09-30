@@ -1,19 +1,6 @@
 import React, { useEffect } from "react";
 import { motion } from "framer-motion";
-import {
-  Heart,
-  Shield,
-  Sparkles,
-  Compass,
-  Activity,
-  ShieldCheck,
-  HeartHandshake,
-  Banknote,
-  Home,
-  Users,
-  ArrowRight,
-  Check,
-} from "lucide-react";
+import { Users, Check } from "lucide-react";
 import { Link } from "react-router-dom";
 
 const WhyUsPage = () => {
@@ -26,28 +13,28 @@ const WhyUsPage = () => {
       title: "Comfort",
       description:
         "Thoughtfully positioned menstrual care designed around women's needs, offering premium softness, breathability, and ergonomic security.",
-      icon: Heart,
+      image: "/assets/images/Comfort.png",
       badge: "Ergonomic Design",
     },
     {
       title: "Hygiene",
       description:
         "A focus on safe, responsible menstrual care with strict quality standards and touch-free automated manufacturing practices.",
-      icon: Shield,
+      image: "/assets/images/Hygiene-removebg-preview.png",
       badge: "Touch-Free Process",
     },
     {
       title: "Confidence",
       description:
         "Helping women experience their periods with confidence and comfort, rather than compromise, fear, or limitations.",
-      icon: Sparkles,
+      image: "/assets/images/Confidence.png",
       badge: "Pure Peace of Mind",
     },
     {
       title: "Empowerment",
       description:
         "Connecting women's health with entrepreneurship, learning, and meaningful financial opportunities to rise together.",
-      icon: Compass,
+      image: "/assets/images/Empowerment-removebg-preview.png",
       badge: "Ecosystem of Rise",
     },
   ];
@@ -56,27 +43,27 @@ const WhyUsPage = () => {
     {
       title: "Better Health",
       desc: "Quality feminine care and menstrual hygiene awareness as the essential foundation.",
-      icon: Activity,
+      image: "/assets/images/Better_Health-removebg-preview.png",
     },
     {
       title: "Greater Confidence",
       desc: "Approaching everyday life and choices with comfort, free from fear or limitations.",
-      icon: ShieldCheck,
+      image: "/assets/images/Greater Confidence.png",
     },
     {
       title: "Meaningful Opportunity",
       desc: "Flexible business platforms that allow women to learn and grow at their own pace.",
-      icon: HeartHandshake,
+      image: "/assets/images/Meaningful_opportunity-removebg-preview.png",
     },
     {
       title: "Financial Independence",
       desc: "Developing skills, earning with dignity, and taking control of their own futures.",
-      icon: Banknote,
+      image: "/assets/images/Financial_Independence-removebg-preview.png",
     },
     {
       title: "Stronger Families",
       desc: "When a woman is empowered, she strengthens her household and sets a new example.",
-      icon: Home,
+      image: "/assets/images/Stronger Families.png",
     },
     {
       title: "Stronger Communities",
@@ -167,9 +154,17 @@ const WhyUsPage = () => {
                   className="bg-araina-white border border-araina-pink/10 hover:border-araina-pink/30 rounded-3xl p-8 shadow-sm hover:shadow-lg transition-all duration-300 flex flex-col justify-between group relative overflow-hidden"
                 >
                   <div>
-                    <div className="inline-flex p-4 rounded-2xl bg-araina-pink/10 text-araina-pink mb-6 group-hover:bg-araina-pink group-hover:text-araina-white transition-all duration-300">
-                      <Icon size={24} />
-                    </div>
+                    {p.image ? (
+                      <img
+                        src={p.image}
+                        alt=""
+                        className="mb-6 h-40 w-40 object-contain transition-transform duration-300 group-hover:scale-105"
+                      />
+                    ) : (
+                      <div className="inline-flex rounded-2xl bg-araina-pink/10 p-4 text-araina-pink transition-all duration-300 group-hover:bg-araina-pink group-hover:text-araina-white">
+                        <Icon size={24} />
+                      </div>
+                    )}
                     <span className="text-[9px] uppercase font-bold tracking-widest text-araina-blue bg-araina-blue/10 px-2.5 py-1 rounded-full block w-fit mb-3">
                       {p.badge}
                     </span>
@@ -210,11 +205,19 @@ const WhyUsPage = () => {
               return (
                 <div
                   key={idx}
-                  className="bg-araina-white border border-araina-pink/10 rounded-2xl p-6 shadow-sm flex items-start gap-4 hover:border-araina-pink/30 transition-all"
+                  className={`bg-araina-white border border-araina-pink/10 rounded-2xl p-6 shadow-sm hover:border-araina-pink/30 transition-all ${step.image ? "flex flex-col" : "flex items-start gap-4"}`}
                 >
-                  <div className="w-12 h-12 rounded-full bg-gradient-to-tr from-araina-pink/10 to-araina-blue/10 border border-araina-pink/20 flex items-center justify-center text-araina-pink shrink-0">
-                    <Icon size={20} />
-                  </div>
+                  {step.image ? (
+                    <img
+                      src={step.image}
+                      alt=""
+                      className="mb-4 h-40 w-40 object-contain"
+                    />
+                  ) : (
+                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-araina-pink/20 bg-gradient-to-tr from-araina-pink/10 to-araina-blue/10 text-araina-pink">
+                      <Icon size={20} />
+                    </div>
+                  )}
                   <div>
                     <span className="text-[10px] uppercase font-bold tracking-widest text-araina-pink block mb-1">
                       Step 0{idx + 1}
