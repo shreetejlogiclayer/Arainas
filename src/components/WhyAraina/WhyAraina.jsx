@@ -83,7 +83,7 @@ const WhyAraina = () => {
                     <img
                       src={pillar.image}
                       alt=""
-                      className={`h-40 w-40 object-contain mb-6 transition-transform duration-500 ${
+                      className={`mx-auto mb-6 block h-40 w-40 object-contain transition-transform duration-500 ${
                         hoveredIdx === idx ? "rotate-6 scale-110" : ""
                       }`}
                     />
