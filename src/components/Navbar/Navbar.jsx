@@ -142,7 +142,7 @@ const Navbar = ({ activeSection, setActiveSection }) => {
   const handleJoinUsClick = () => {
     setIsOpen(false);
     // Open Araina User Portal in a new tab
-    window.open("/portal/login", "_blank", "noopener,noreferrer");
+    window.open("/portal", "_blank", "noopener,noreferrer");
   };
 
   return (

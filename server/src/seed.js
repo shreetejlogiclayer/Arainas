@@ -21,16 +21,19 @@ async function main() {
     console.log("✓ Product created:", product.name);
 
     // ==================== CREATE PRODUCT VARIANTS ====================
-    const variant = await prisma.productVariant.create({
-      data: {
-        productId: product.id,
-        name: "Regular",
-        description: "Standard length pads",
-        active: true,
-      },
-    });
-
-    console.log("✓ Product variant created:", variant.name);
+    for (const variant of [
+      { name: "Regular", description: "Standard length pads" },
+      { name: "Extra Long", description: "Extra length for extended coverage" },
+    ]) {
+      await prisma.productVariant.create({
+        data: {
+          productId: product.id,
+          ...variant,
+          active: true,
+        },
+      });
+      console.log("✓ Product variant created:", variant.name);
+    }
 
     // ==================== CREATE PRICING TIERS ====================
     const pricingTiers = [

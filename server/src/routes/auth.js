@@ -1,7 +1,12 @@
 import express from "express";
 import { generateAccessToken, generateRefreshToken } from "../utils/crypto.js";
-import { authMiddleware } from "../middleware/auth.js";
+import { sessionAuthMiddleware } from "../middleware/auth.js";
 import * as authService from "../services/authService.js";
+import {
+  deleteProfilePhoto,
+  getProfilePhoto,
+  saveProfilePhoto,
+} from "../services/profileMediaService.js";
 
 const router = express.Router();
 
@@ -14,12 +19,12 @@ router.post("/register", async (req, res) => {
     const { email, mobile, password, confirmPassword } = req.body;
 
     // Validate required fields
-    if (!email || !mobile || !password || !confirmPassword) {
+    if (!mobile || !password || !confirmPassword) {
       return res.status(400).json({
         error: {
           status: 400,
           message:
-            "Missing required fields: email, mobile, password, confirmPassword",
+            "Missing required fields: mobile, password, confirmPassword",
         },
       });
     }
@@ -40,6 +45,7 @@ router.post("/register", async (req, res) => {
     // Create session
     req.session.userId = user.userId;
     req.session.userEmail = user.email;
+    req.session.userMobile = user.mobile;
 
     res.status(201).json({
       success: true,
@@ -66,23 +72,24 @@ router.post("/register", async (req, res) => {
  */
 router.post("/login", async (req, res) => {
   try {
-    const { email, password, rememberMe } = req.body;
+    const { mobile, password, rememberMe } = req.body;
 
-    if (!email || !password) {
+    if (!mobile || !password) {
       return res.status(400).json({
         error: {
           status: 400,
-          message: "Missing email or password",
+          message: "Missing mobile number or password",
         },
       });
     }
 
     // Login user
-    const user = await authService.loginUser(email, password);
+    const user = await authService.loginUser(mobile, password);
 
     // Create session
     req.session.userId = user.userId;
     req.session.userEmail = user.email;
+    req.session.userMobile = user.mobile;
 
     // Set session expiry based on rememberMe
     if (rememberMe) {
@@ -112,7 +119,7 @@ router.post("/login", async (req, res) => {
  * POST /api/auth/logout
  * Logout user
  */
-router.post("/logout", authMiddleware, (req, res) => {
+router.post("/logout", sessionAuthMiddleware, (req, res) => {
   req.session.destroy((err) => {
     if (err) {
       return res.status(500).json({
@@ -219,7 +226,7 @@ router.post("/reset-password", async (req, res) => {
  * GET /api/auth/me
  * Get current authenticated user
  */
-router.get("/me", authMiddleware, async (req, res) => {
+router.get("/me", sessionAuthMiddleware, async (req, res) => {
   try {
     const user = await authService.getUserById(req.userId);
 
@@ -241,14 +248,15 @@ router.get("/me", authMiddleware, async (req, res) => {
  * PUT /api/auth/profile
  * Update user profile
  */
-router.put("/profile", authMiddleware, async (req, res) => {
+router.put("/profile", sessionAuthMiddleware, async (req, res) => {
   try {
-    const { fullName, alternateMobile, referredByCode } = req.body;
+    const { fullName, alternateMobile, referredByCode, address } = req.body;
 
     const profile = await authService.updateUserProfile(req.userId, {
       fullName,
       alternateMobile,
       referredByCode,
+      address,
     });
 
     res.json({
@@ -266,11 +274,158 @@ router.put("/profile", authMiddleware, async (req, res) => {
   }
 });
 
+router.post("/addresses", sessionAuthMiddleware, async (req, res) => {
+  try {
+    const address = await authService.createUserAddress(
+      req.userId,
+      req.body.address,
+    );
+    res.status(201).json({ success: true, data: address });
+  } catch (error) {
+    res.status(400).json({ error: { status: 400, message: error.message } });
+  }
+});
+
+router.put("/addresses/:addressId", sessionAuthMiddleware, async (req, res) => {
+  try {
+    const address = await authService.updateUserAddress(
+      req.userId,
+      req.params.addressId,
+      req.body.address,
+    );
+    res.json({ success: true, data: address });
+  } catch (error) {
+    res.status(400).json({ error: { status: 400, message: error.message } });
+  }
+});
+
+router.patch(
+  "/addresses/:addressId/default",
+  sessionAuthMiddleware,
+  async (req, res) => {
+    try {
+      const address = await authService.setDefaultUserAddress(
+        req.userId,
+        req.params.addressId,
+      );
+      res.json({ success: true, data: address });
+    } catch (error) {
+      res.status(400).json({ error: { status: 400, message: error.message } });
+    }
+  },
+);
+
+router.delete(
+  "/addresses/:addressId",
+  sessionAuthMiddleware,
+  async (req, res) => {
+    try {
+      await authService.deleteUserAddress(req.userId, req.params.addressId);
+      res.json({ success: true, message: "Address deleted" });
+    } catch (error) {
+      res.status(400).json({ error: { status: 400, message: error.message } });
+    }
+  },
+);
+
+router.post(
+  "/profile/photo",
+  sessionAuthMiddleware,
+  express.raw({
+    type: ["image/jpeg", "image/png", "image/webp"],
+    limit: "3mb",
+  }),
+  async (req, res) => {
+    try {
+      const photo = await saveProfilePhoto(
+        req.userId,
+        req.headers["content-type"]?.split(";")[0],
+        req.body,
+      );
+      res.status(201).json({ success: true, data: photo });
+    } catch (error) {
+      res.status(400).json({ error: { status: 400, message: error.message } });
+    }
+  },
+);
+
+router.get(
+  "/profile/photos/:photoId",
+  sessionAuthMiddleware,
+  async (req, res, next) => {
+    try {
+      const photo = await getProfilePhoto(req.userId, req.params.photoId);
+      if (!photo) {
+        return res.status(404).json({
+          error: { status: 404, message: "Profile photo not found" },
+        });
+      }
+      res.set({
+        "Cache-Control": "private, max-age=3600",
+        "Content-Type": photo.contentType,
+        "X-Content-Type-Options": "nosniff",
+      });
+      return res.sendFile(photo.path, (error) => {
+        if (error && !res.headersSent) next(error);
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
+);
+
+router.delete(
+  "/profile/photos/:photoId",
+  sessionAuthMiddleware,
+  async (req, res) => {
+    try {
+      await deleteProfilePhoto(req.userId, req.params.photoId);
+      res.json({ success: true, message: "Profile photo deleted" });
+    } catch (error) {
+      res.status(400).json({ error: { status: 400, message: error.message } });
+    }
+  },
+);
+
+router.post(
+  "/aadhaar/request-otp",
+  sessionAuthMiddleware,
+  async (req, res) => {
+    try {
+      const data = await authService.requestAadhaarOtp(
+        req.userId,
+        req.body.aadhaar,
+      );
+      res.json({ success: true, data });
+    } catch (error) {
+      const status = error.message.includes("unavailable") ? 503 : 400;
+      res.status(status).json({ error: { status, message: error.message } });
+    }
+  },
+);
+
+router.post(
+  "/aadhaar/verify-otp",
+  sessionAuthMiddleware,
+  async (req, res) => {
+    try {
+      const data = await authService.verifyAadhaarOtp(
+        req.userId,
+        req.body.otp,
+      );
+      res.json({ success: true, data });
+    } catch (error) {
+      const status = error.message.includes("unavailable") ? 503 : 400;
+      res.status(status).json({ error: { status, message: error.message } });
+    }
+  },
+);
+
 /**
  * GET /api/auth/referrals
  * Get user's referral information
  */
-router.get("/referrals", authMiddleware, async (req, res) => {
+router.get("/referrals", sessionAuthMiddleware, async (req, res) => {
   try {
     const referralInfo = await authService.getUserReferralInfo(req.userId);
 

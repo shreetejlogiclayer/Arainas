@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { Eye, EyeOff } from "lucide-react";
 import AuthCard from "../../components/AuthCard/AuthCard";
-import { isValidEmail } from "../../utils/formatters";
+import { isValidIndianPhone } from "../../utils/formatters";
 
 /**
  * Login Page
@@ -18,7 +18,7 @@ const LoginPage = () => {
   const navigate = useNavigate();
 
   // Form state
-  const [email, setEmail] = useState("");
+  const [mobile, setMobile] = useState("");
   const [password, setPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -31,10 +31,10 @@ const LoginPage = () => {
   const validateForm = () => {
     const newErrors = {};
 
-    if (!email.trim()) {
-      newErrors.email = "Email is required";
-    } else if (!isValidEmail(email)) {
-      newErrors.email = "Please enter a valid email";
+    if (!mobile.trim()) {
+      newErrors.mobile = "Mobile number is required";
+    } else if (!isValidIndianPhone(mobile)) {
+      newErrors.mobile = "Please enter a valid 10-digit Indian mobile number";
     }
 
     if (!password) {
@@ -58,30 +58,36 @@ const LoginPage = () => {
     setIsLoading(true);
 
     try {
-      // TODO: Replace with actual API call
-      // const response = await fetch("/api/auth/login", {
-      //   method: "POST",
-      //   headers: { "Content-Type": "application/json" },
-      //   credentials: "include",
-      //   body: JSON.stringify({ email, password, rememberMe }),
-      // });
+      const response = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ mobile, password, rememberMe }),
+      });
+      const result = await response.json();
 
-      // Simulated API call for development
-      console.log("Login attempt:", { email, password, rememberMe });
-
-      // Simulate API response
-      if (email === "test@example.com" && password === "Password123!") {
-        // Save auth token (in production, this would be set via secure cookie)
-        localStorage.setItem("authToken", "mock-token-" + Date.now());
-        localStorage.setItem("userEmail", email);
-
-        // Redirect to dashboard
-        navigate("/portal/dashboard");
-      } else {
-        setApiError("Invalid email or password. Please try again.");
+      if (!response.ok) {
+        setApiError(result.error?.message || "Unable to log in. Please try again.");
+        return;
       }
+
+      localStorage.setItem("authToken", "session");
+      localStorage.setItem("userMobile", result.data.mobile || mobile);
+      if (result.data.email) {
+        localStorage.setItem("userEmail", result.data.email);
+      } else {
+        localStorage.removeItem("userEmail");
+      }
+      navigate(
+        result.data.profile?.fullName?.trim() &&
+          result.data.profile?.address?.id
+          ? "/portal/dashboard"
+          : "/portal/create-profile",
+      );
     } catch (err) {
-      setApiError("Unable to log in. Please try again later.");
+      setApiError(
+        "Unable to reach the Araina server. Start the backend and check its database configuration, then try again.",
+      );
       console.error("Login error:", err);
     } finally {
       setIsLoading(false);
@@ -102,28 +108,29 @@ const LoginPage = () => {
           </div>
         )}
 
-        {/* Email Field */}
+        {/* Mobile Field */}
         <div>
           <label className="block text-xs uppercase font-semibold text-araina-black mb-2 tracking-widest">
-            Email Address <span className="text-araina-pink">*</span>
+            Mobile Number <span className="text-araina-pink">*</span>
           </label>
           <input
-            type="email"
-            value={email}
+            type="tel"
+            value={mobile}
+            autoComplete="tel"
             onChange={(e) => {
-              setEmail(e.target.value);
-              if (errors.email) setErrors({ ...errors, email: "" });
+              setMobile(e.target.value);
+              if (errors.mobile) setErrors({ ...errors, mobile: "" });
             }}
-            placeholder="you@example.com"
+            placeholder="10-digit number"
             className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-araina-pink/50 transition-all text-sm ${
-              errors.email
+              errors.mobile
                 ? "border-red-300 bg-red-50"
                 : "border-araina-pink/20 bg-araina-white"
             }`}
             disabled={isLoading}
           />
-          {errors.email && (
-            <p className="text-xs text-red-600 mt-1">{errors.email}</p>
+          {errors.mobile && (
+            <p className="text-xs text-red-600 mt-1">{errors.mobile}</p>
           )}
         </div>
 
@@ -215,13 +222,6 @@ const LoginPage = () => {
         </p>
       </form>
 
-      {/* Development Note */}
-      <div className="mt-8 p-4 bg-araina-blue/5 border border-araina-blue/10 rounded-lg">
-        <p className="text-xs text-araina-black/60 text-center">
-          💡 Development Mode: Use email <code>test@example.com</code> and
-          password <code>Password123!</code>
-        </p>
-      </div>
     </AuthCard>
   );
 };

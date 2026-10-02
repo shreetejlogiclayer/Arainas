@@ -1,4 +1,5 @@
 import React from "react";
+import { motion } from "framer-motion";
 
 /**
  * AuthCard Component
@@ -13,14 +14,17 @@ const AuthCard = ({
   className = "",
 }) => {
   return (
-    <div className="min-h-screen bg-araina-white flex items-center justify-center px-6 py-12">
+    <div className="portal-theme butterfly-background relative isolate flex min-h-screen items-center justify-center overflow-hidden bg-gradient-to-tr from-araina-white via-araina-pink/5 to-araina-blue/5 px-6 py-12">
       {/* Background decorations */}
       <div className="absolute top-1/4 left-10 w-64 h-64 bg-araina-pink/5 rounded-full blur-3xl pointer-events-none" />
       <div className="absolute bottom-1/4 right-10 w-64 h-64 bg-araina-blue/5 rounded-full blur-3xl pointer-events-none" />
 
       {/* Card */}
-      <div
-        className={`relative z-10 w-full max-w-md bg-araina-white rounded-lg border border-araina-pink/10 shadow-lg p-8 sm:p-10 ${className}`}
+      <motion.div
+        initial={{ opacity: 0, y: 24, scale: 0.98 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        transition={{ duration: 0.55, ease: "easeOut" }}
+        className={`portal-auth-card relative z-10 w-full max-w-md rounded-2xl border border-araina-pink/20 bg-araina-white/90 p-8 shadow-2xl shadow-araina-pink/10 backdrop-blur-md sm:p-10 ${className}`}
       >
         {/* Logo */}
         <div className="flex justify-center mb-8">
@@ -56,7 +60,7 @@ const AuthCard = ({
             </div>
           </div>
         )}
-      </div>
+      </motion.div>
     </div>
   );
 };

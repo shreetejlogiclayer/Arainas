@@ -15,7 +15,7 @@ This is the backend server for the Araina User Portal. It handles:
 
 - **Runtime**: Node.js
 - **Framework**: Express.js
-- **Database**: PostgreSQL + Prisma ORM
+- **Database**: MySQL/MariaDB + Prisma ORM
 - **Authentication**: JWT + Sessions
 - **Validation**: Zod (ready to integrate)
 - **Security**: bcryptjs, CORS, rate limiting
@@ -23,7 +23,7 @@ This is the backend server for the Araina User Portal. It handles:
 ## Prerequisites
 
 - Node.js 16+ installed
-- PostgreSQL database running
+- MySQL or MariaDB database running
 - Git
 
 ## Installation
@@ -47,23 +47,21 @@ This is the backend server for the Araina User Portal. It handles:
    ```
 
    Edit `.env` and configure:
-   - `DATABASE_URL`: PostgreSQL connection string
+   - `DATABASE_URL`: MySQL connection string
    - `JWT_SECRET`: Random string for JWT signing
    - `SESSION_SECRET`: Random string for sessions
    - Other services as needed
 
 ## Database Setup
 
-### Create PostgreSQL Database
+### Hostinger MySQL Database
 
-```bash
-createdb araina_dev
-```
-
-Or using PostgreSQL CLI:
+Create a database and database user in Hostinger hPanel, then grant that user access to the database. If you have direct SQL access, create the database using:
 
 ```sql
-CREATE DATABASE araina_dev;
+CREATE DATABASE araina_dev
+  CHARACTER SET utf8mb4
+  COLLATE utf8mb4_unicode_ci;
 ```
 
 ### Update Database URL
@@ -71,22 +69,22 @@ CREATE DATABASE araina_dev;
 Edit `.env`:
 
 ```
-DATABASE_URL="postgresql://username:password@localhost:5432/araina_dev"
+DATABASE_URL="mysql://DB_USER:DB_PASSWORD@DB_HOST:3306/DB_NAME"
 ```
 
-### Run Migrations
+### Create or Update Tables
 
-Generate Prisma client and run migrations:
+Generate Prisma client and synchronize the tables in MySQL with the Prisma schema:
 
 ```bash
-npm run migrate
+npx prisma generate
+npx prisma db push
 ```
 
 This will:
 
 - Generate the Prisma client
-- Create all database tables
-- Create migration files
+- Create or update the tables to match the Prisma schema
 
 ### Seed Development Data
 
@@ -97,7 +95,7 @@ npm run seed
 This creates:
 
 - Sample product with pricing tiers
-- Test user (email: `test@example.com`, password: `Password123!`)
+- Test user (mobile: `9876543210`, password: `Password123!`; email: `test@example.com`)
 - Test address
 - Sample referral code
 
@@ -139,6 +137,14 @@ Expected response:
 - `GET /api/profile` - Get user profile
 - `POST /api/profile` - Create profile
 - `PUT /api/profile` - Update profile
+
+### Orders
+
+- `GET /api/orders/catalog` - Load active products, variants, and quantity pricing
+- `GET /api/orders` - List the signed-in user's orders and recipient snapshots
+- `POST /api/orders` - Place an order for the account holder or another recipient
+
+Order payment remains disabled until a payment provider is configured.
 
 ### Aadhaar Routes
 
@@ -195,7 +201,7 @@ The database includes the following models:
 Important variables:
 
 ```
-DATABASE_URL=postgresql://...
+DATABASE_URL="mysql://DB_USER:DB_PASSWORD@DB_HOST:3306/DB_NAME"
 JWT_SECRET=your-secret-here
 SESSION_SECRET=your-secret-here
 FRONTEND_URL=http://localhost:5173
@@ -213,6 +219,8 @@ To update schema:
 1. Edit `schema.prisma`
 2. Run `npm run migrate`
 3. Choose a name for the migration
+
+User email is optional; mobile number is required for both registration and login.
 
 ## Development Tips
 
@@ -269,7 +277,7 @@ All API errors follow this format:
 
 ```bash
 NODE_ENV=production
-DATABASE_URL=your-production-db-url
+DATABASE_URL="mysql://DB_USER:DB_PASSWORD@DB_HOST:3306/DB_NAME"
 JWT_SECRET=secure-random-secret
 SESSION_SECRET=secure-random-secret
 FRONTEND_URL=https://your-domain.com
@@ -312,19 +320,29 @@ Update `AADHAAR_PROVIDER` to `production`
 
 ### File Storage (Currently: none)
 
+- Profile photos are stored in `USER_UPLOAD_DIR` (default: `server/uploads`).
+- Keep this directory on persistent storage when deploying the backend.
 - AWS S3
 - Supabase Storage
 - Cloudinary
+
+### Profile Aadhaar Verification
+
+- The development mock is available only when `NODE_ENV=development` and
+  `AADHAAR_PROVIDER=mock`. It stores only the last four digits and uses OTP
+  `123456` for local testing.
+- The mock is disabled in production. Configure an authorized verification
+  provider before enabling Aadhaar verification on a deployed portal.
 
 ## Troubleshooting
 
 ### Database Connection Error
 
 ```
-Error: connect ECONNREFUSED 127.0.0.1:5432
+Error: connect ECONNREFUSED 127.0.0.1:3306
 ```
 
-- Ensure PostgreSQL is running
+- Ensure MySQL is running
 - Check DATABASE_URL in .env
 - Verify database name exists
 
@@ -352,7 +370,7 @@ For issues or questions, refer to:
 
 - Express.js docs: https://expressjs.com
 - Prisma docs: https://www.prisma.io/docs
-- PostgreSQL docs: https://www.postgresql.org/docs
+- MySQL docs: https://dev.mysql.com/doc
 
 ## License
 

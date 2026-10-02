@@ -1,0 +1,8 @@
+# Environment files may contain database credentials and application secrets.
+.env
+.env.*
+!.env.example
+**/.env
+**/.env.*
+!**/.env.example
+/server/uploads/

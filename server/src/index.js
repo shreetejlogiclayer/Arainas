@@ -6,7 +6,7 @@ import { PrismaClient } from "@prisma/client";
 
 const app = express();
 const prisma = new PrismaClient();
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 5001;
 const NODE_ENV = process.env.NODE_ENV || "development";
 
 // ==================== MIDDLEWARE ====================
@@ -58,6 +58,8 @@ app.get("/api/version", (req, res) => {
 
 // Import route modules
 import authRoutes from "./routes/auth.js";
+import orderRoutes from "./routes/orders.js";
+import { ensureDefaultOrderCatalog } from "./services/orderService.js";
 // import profileRoutes from './routes/profile.js';
 // import orderRoutes from './routes/orders.js';
 // import referralRoutes from './routes/referrals.js';
@@ -65,6 +67,7 @@ import authRoutes from "./routes/auth.js";
 
 // Use routes
 app.use("/api/auth", authRoutes);
+app.use("/api/orders", orderRoutes);
 // app.use('/api/profile', profileRoutes);
 // app.use('/api/orders', orderRoutes);
 // app.use('/api/referrals', referralRoutes);
@@ -103,6 +106,7 @@ const startServer = async () => {
   try {
     // Test database connection
     await prisma.$connect();
+    await ensureDefaultOrderCatalog();
     console.log("✓ Database connected");
 
     app.listen(PORT, () => {

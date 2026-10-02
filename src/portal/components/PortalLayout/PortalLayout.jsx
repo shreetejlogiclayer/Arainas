@@ -20,14 +20,16 @@ const PortalLayout = ({
   const handleLogout = () => {
     // TODO: Implement logout API call
     localStorage.removeItem("authToken");
+    localStorage.removeItem("userMobile");
+    localStorage.removeItem("userEmail");
     navigate("/portal/login");
   };
 
   return (
-    <div className="min-h-screen bg-araina-white text-araina-black font-unbounded">
+    <div className="portal-theme butterfly-background relative isolate min-h-screen overflow-hidden bg-gradient-to-tr from-araina-white via-araina-pink/5 to-araina-blue/5 text-araina-black font-unbounded">
       {/* ==================== HEADER ==================== */}
       {showHeader && (
-        <header className="fixed top-0 left-0 right-0 z-40 bg-araina-white border-b border-araina-pink/10">
+        <header className="fixed top-0 left-0 right-0 z-40 border-b border-araina-pink/10 bg-araina-white/90 backdrop-blur-md">
           <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
             {/* Logo */}
             <div
@@ -151,13 +153,13 @@ const PortalLayout = ({
 
       {/* ==================== MAIN CONTENT ==================== */}
       <main
-        className={`${showHeader ? "pt-24 sm:pt-28" : ""} min-h-screen bg-araina-white`}
+        className={`relative z-10 ${showHeader ? "pt-24 sm:pt-28" : ""} min-h-screen bg-transparent`}
       >
         <div className="max-w-7xl mx-auto px-6 py-12">{children}</div>
       </main>
 
       {/* ==================== FOOTER ==================== */}
-      <footer className="border-t border-araina-pink/5 bg-araina-white py-8 mt-16">
+      <footer className="relative z-10 mt-16 border-t border-araina-pink/10 bg-araina-white/85 py-8 backdrop-blur-md">
         <div className="max-w-7xl mx-auto px-6 text-center">
           <p className="text-xs text-araina-black/50 uppercase tracking-widest">
             © 2026 Royo Essentials LLP. All rights reserved. | ARAINA

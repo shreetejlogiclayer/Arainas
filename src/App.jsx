@@ -12,6 +12,7 @@ import ContactPage from "./pages/ContactPage";
 
 // Portal Imports
 import ProtectedRoute from "./portal/components/ProtectedRoute/ProtectedRoute";
+import AuthOptionsPage from "./portal/pages/AuthOptionsPage/AuthOptionsPage";
 import LoginPage from "./portal/pages/LoginPage/LoginPage";
 import RegisterPage from "./portal/pages/RegisterPage/RegisterPage";
 import ForgotPasswordPage from "./portal/pages/ForgotPasswordPage/ForgotPasswordPage";
@@ -101,6 +102,7 @@ function App() {
 
           {/* ==================== PORTAL ROUTES ==================== */}
           {/* Authentication Routes (No Protection) */}
+          <Route path="/portal" element={<AuthOptionsPage />} />
           <Route path="/portal/login" element={<LoginPage />} />
           <Route path="/portal/register" element={<RegisterPage />} />
           <Route

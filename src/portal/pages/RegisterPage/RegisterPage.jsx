@@ -27,9 +27,7 @@ const RegisterPage = () => {
   const validateForm = () => {
     const newErrors = {};
 
-    if (!email.trim()) {
-      newErrors.email = "Email is required";
-    } else if (!isValidEmail(email)) {
+    if (email.trim() && !isValidEmail(email)) {
       newErrors.email = "Please enter a valid email";
     }
 
@@ -67,14 +65,33 @@ const RegisterPage = () => {
     setIsLoading(true);
 
     try {
-      // TODO: Replace with actual API call
-      console.log("Register attempt:", { email, mobile, password });
+      const response = await fetch("/api/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          email: email.trim() || null,
+          mobile,
+          password,
+          confirmPassword,
+        }),
+      });
+      const result = await response.json();
 
-      // Simulated success
-      localStorage.setItem("authToken", "mock-token-" + Date.now());
-      localStorage.setItem("userEmail", email);
+      if (!response.ok) {
+        setApiError(
+          result.error?.message || "Unable to create account. Please try again.",
+        );
+        return;
+      }
 
-      // Redirect to profile creation
+      localStorage.setItem("authToken", "session");
+      localStorage.setItem("userMobile", result.data.mobile || mobile);
+      if (result.data.email) {
+        localStorage.setItem("userEmail", result.data.email);
+      } else {
+        localStorage.removeItem("userEmail");
+      }
       navigate("/portal/create-profile");
     } catch (err) {
       setApiError("Unable to create account. Please try again later.");
@@ -100,7 +117,7 @@ const RegisterPage = () => {
         {/* Email Field */}
         <div>
           <label className="block text-xs uppercase font-semibold text-araina-black mb-2 tracking-widest">
-            Email <span className="text-araina-pink">*</span>
+            Email (optional)
           </label>
           <input
             type="email"

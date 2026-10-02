@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import PortalLayout from "../../components/PortalLayout/PortalLayout";
+import { formatPhone } from "../../utils/formatters";
 
 /**
  * Dashboard Page
@@ -11,24 +12,72 @@ const DashboardPage = () => {
   const navigate = useNavigate();
   const [userData, setUserData] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
 
   useEffect(() => {
-    // Simulate loading user data
-    const timer = setTimeout(() => {
-      const userEmail = localStorage.getItem("userEmail") || "User";
-      const userName = userEmail.split("@")[0];
-      setUserData({
-        name: userName.charAt(0).toUpperCase() + userName.slice(1),
-        email: userEmail,
-        totalOrders: 0,
-        referralCount: 0,
-        availableCoupons: 0,
-        usedCoupons: 0,
-      });
-      setIsLoading(false);
-    }, 500);
+    const controller = new AbortController();
+    const loadUser = async () => {
+      try {
+        const [accountResult, ordersResult] = await Promise.allSettled([
+          fetch("/api/auth/me", {
+            credentials: "include",
+            signal: controller.signal,
+          }),
+          fetch("/api/orders", {
+            credentials: "include",
+            signal: controller.signal,
+          }),
+        ]);
+        if (accountResult.status === "rejected") throw accountResult.reason;
+        const response = accountResult.value;
+        const result = await response.json();
+        if (!response.ok) {
+          throw new Error(
+            result.error?.message || "Unable to load your account.",
+          );
+        }
 
-    return () => clearTimeout(timer);
+        const user = result.data;
+        setUserData({
+          name: user.profile?.fullName?.trim() || "Araina Member",
+          mobile: user.mobile,
+          email: user.email,
+          totalOrders: null,
+          referralCount: 0,
+          availableCoupons: 0,
+          usedCoupons: 0,
+        });
+        if (user.mobile) localStorage.setItem("userMobile", user.mobile);
+        if (user.email) localStorage.setItem("userEmail", user.email);
+        else localStorage.removeItem("userEmail");
+
+        if (ordersResult.status === "fulfilled" && ordersResult.value.ok) {
+          const orderData = await ordersResult.value.json();
+          setUserData((current) => ({
+            ...current,
+            totalOrders: Array.isArray(orderData.data)
+              ? orderData.data.length
+              : 0,
+          }));
+        } else {
+          const orderResponse =
+            ordersResult.status === "fulfilled" ? ordersResult.value : null;
+          const orderError = orderResponse
+            ? await orderResponse.json()
+            : null;
+          setLoadError(
+            orderError?.error?.message || "Unable to load your order count.",
+          );
+        }
+      } catch (error) {
+        if (error.name !== "AbortError") setLoadError(error.message);
+      } finally {
+        if (!controller.signal.aborted) setIsLoading(false);
+      }
+    };
+
+    loadUser();
+    return () => controller.abort();
   }, []);
 
   if (isLoading) {
@@ -57,7 +106,23 @@ const DashboardPage = () => {
           <p className="text-araina-black/60 text-base">
             Here's your Araina Member Dashboard
           </p>
+          <div className="mt-4 inline-flex flex-col gap-1 rounded-xl border border-araina-pink/10 bg-white/75 px-4 py-3 text-left sm:flex-row sm:items-center sm:gap-5">
+            <span className="text-sm font-semibold text-araina-black">
+              Mobile: {userData?.mobile ? formatPhone(userData.mobile) : "Not available"}
+            </span>
+            <span className="text-xs text-araina-black/55">
+              Email (optional): {userData?.email || "Not added"}
+            </span>
+          </div>
         </div>
+        {loadError && (
+          <div
+            role="alert"
+            className="mb-6 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700"
+          >
+            {loadError}
+          </div>
+        )}
 
         {/* Action Buttons */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-12">
@@ -83,12 +148,14 @@ const DashboardPage = () => {
               Total Orders
             </p>
             <p className="text-3xl font-bold text-araina-pink">
-              {userData?.totalOrders || 0}
+              {userData?.totalOrders ?? "—"}
             </p>
             <p className="text-xs text-araina-black/50 mt-2">
-              {userData?.totalOrders === 0
-                ? "Start your first order"
-                : "Keep shopping"}
+              {userData?.totalOrders == null
+                ? "Orders unavailable"
+                : userData.totalOrders === 0
+                  ? "Start your first order"
+                  : "Keep shopping"}
             </p>
           </div>
 
