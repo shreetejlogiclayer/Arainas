@@ -16,6 +16,7 @@ const RegisterPage = () => {
 
   const [email, setEmail] = useState("");
   const [mobile, setMobile] = useState("");
+  const [referredByCode, setReferredByCode] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -74,6 +75,7 @@ const RegisterPage = () => {
           mobile,
           password,
           confirmPassword,
+          referredByCode: referredByCode.trim(),
         }),
       });
       const result = await response.json();
@@ -162,6 +164,21 @@ const RegisterPage = () => {
           {errors.mobile && (
             <p className="text-xs text-red-600 mt-1">{errors.mobile}</p>
           )}
+        </div>
+
+        <div>
+          <label className="block text-xs uppercase font-semibold text-araina-black mb-2 tracking-widest">
+            Referral Code (optional)
+          </label>
+          <input
+            type="text"
+            value={referredByCode}
+            onChange={(e) => setReferredByCode(e.target.value.toUpperCase())}
+            placeholder="Enter a friend's referral code"
+            maxLength={50}
+            className="w-full px-4 py-3 border border-araina-pink/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-araina-pink/50 transition-all text-sm"
+            disabled={isLoading}
+          />
         </div>
 
         {/* Password Field */}

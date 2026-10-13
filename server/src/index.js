@@ -18,7 +18,10 @@ app.use(express.urlencoded({ extended: true }));
 // CORS Configuration
 app.use(
   cors({
-    origin: process.env.FRONTEND_URL || "http://localhost:5173",
+    origin: [
+      process.env.FRONTEND_URL || "http://localhost:5173",
+      ...(process.env.ADMIN_DASHBOARD_ORIGIN ? [process.env.ADMIN_DASHBOARD_ORIGIN] : []),
+    ],
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
     allowedHeaders: ["Content-Type", "Authorization"],
@@ -59,6 +62,7 @@ app.get("/api/version", (req, res) => {
 // Import route modules
 import authRoutes from "./routes/auth.js";
 import orderRoutes from "./routes/orders.js";
+import adminRoutes from "./routes/admin.js";
 import { ensureDefaultOrderCatalog } from "./services/orderService.js";
 // import profileRoutes from './routes/profile.js';
 // import orderRoutes from './routes/orders.js';
@@ -68,6 +72,7 @@ import { ensureDefaultOrderCatalog } from "./services/orderService.js";
 // Use routes
 app.use("/api/auth", authRoutes);
 app.use("/api/orders", orderRoutes);
+app.use("/api/admin", adminRoutes);
 // app.use('/api/profile', profileRoutes);
 // app.use('/api/orders', orderRoutes);
 // app.use('/api/referrals', referralRoutes);

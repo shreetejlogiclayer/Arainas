@@ -129,3 +129,15 @@ export const deleteProfilePhoto = async (userId, photoId) => {
     },
   );
 }
+
+export const deleteStoredProfilePhotos = async (photos) => {
+  const failures = [];
+  await Promise.all(photos.map(async (photo) => {
+    try {
+      await unlink(path.join(uploadDirectory, getSafeStorageKey(photo.storageKey)));
+    } catch (error) {
+      if (error.code !== "ENOENT") failures.push(error);
+    }
+  }));
+  if (failures.length) throw new AggregateError(failures, "Failed to remove one or more stored profile photos.");
+};

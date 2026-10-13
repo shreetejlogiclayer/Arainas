@@ -1,6 +1,11 @@
 import express from "express";
 import { sessionAuthMiddleware } from "../middleware/auth.js";
-import { createOrder, getOrderCatalog, getUserOrders } from "../services/orderService.js";
+import {
+  createOrder,
+  getAvailableCoupons,
+  getOrderCatalog,
+  getUserOrders,
+} from "../services/orderService.js";
 
 const router = express.Router();
 router.use(sessionAuthMiddleware);
@@ -12,6 +17,17 @@ router.get("/catalog", async (req, res) => {
     console.error("Failed to load order catalog:", error);
     res.status(500).json({
       error: { status: 500, message: "Unable to load available products." },
+    });
+  }
+});
+
+router.get("/coupons", async (req, res) => {
+  try {
+    res.json({ success: true, data: await getAvailableCoupons(req.userId) });
+  } catch (error) {
+    console.error("Failed to load available coupons:", error);
+    res.status(500).json({
+      error: { status: 500, message: "Unable to load your available coupons." },
     });
   }
 });

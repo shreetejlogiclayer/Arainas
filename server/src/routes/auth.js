@@ -16,7 +16,7 @@ const router = express.Router();
  */
 router.post("/register", async (req, res) => {
   try {
-    const { email, mobile, password, confirmPassword } = req.body;
+    const { email, mobile, password, confirmPassword, referredByCode } = req.body;
 
     // Validate required fields
     if (!mobile || !password || !confirmPassword) {
@@ -40,7 +40,12 @@ router.post("/register", async (req, res) => {
     }
 
     // Register user
-    const user = await authService.registerUser(email, mobile, password);
+    const user = await authService.registerUser(
+      email,
+      mobile,
+      password,
+      referredByCode,
+    );
 
     // Create session
     req.session.userId = user.userId;

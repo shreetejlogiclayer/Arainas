@@ -82,7 +82,7 @@ table{width:100%;border-collapse:collapse;margin:16px 0 24px}th{text-align:left;
 <header class="top"><div><div class="brand">${escapeHtml(COMPANY_INFO.brand)}</div><div class="tag">${escapeHtml(COMPANY_INFO.tagline)}</div><p><strong>${escapeHtml(COMPANY_INFO.name)}</strong><br><span class="muted">${escapeHtml(COMPANY_INFO.address)}<br>${escapeHtml(COMPANY_INFO.phone)} · ${escapeHtml(COMPANY_INFO.email)}</span></p></div><div class="right"><div class="title">ORDER RECEIPT</div><div class="number">#${escapeHtml(order.orderNumber)}</div><div class="muted">${escapeHtml(formatDateTime(order.createdAt))}</div></div></header>
 <section class="people"><div class="card"><p class="label">Ordered by</p><div class="person">${escapeHtml(order.orderedByName)}</div><div class="info">${escapeHtml(formatPhone(order.orderedByMobile || ""))}</div></div><div class="card"><p class="label">Ordered for · ${order.recipientType === "other" ? "Someone else" : "Myself"}</p><div class="person">${escapeHtml(recipient.name || order.deliveryRecipientName)}</div><div class="info">${escapeHtml(formatPhone(recipient.mobile || ""))}${recipient.alternateMobile ? ` · Alt: ${escapeHtml(formatPhone(recipient.alternateMobile))}` : ""}</div><div class="info">${addressHtml}</div></div></section>
 <p class="label">Order details</p><table><thead><tr><th>Product & variant</th><th>Boxes</th><th>Price / box</th><th>Amount</th></tr></thead><tbody><tr><td><strong>${escapeHtml(item.product || "Araina Sanitary Pads")}</strong><br><span class="muted">${escapeHtml(item.variant)}</span></td><td>${escapeHtml(item.boxes)}</td><td>${escapeHtml(formatCurrency(item.pricePerBox || 0))}</td><td>${escapeHtml(formatCurrency(item.subtotal || 0))}</td></tr></tbody></table>
-<div class="total"><div class="sum"><span>Subtotal</span><strong>${escapeHtml(formatCurrency(order.subtotal))}</strong></div><div class="sum grand"><span>Total</span><span>${escapeHtml(formatCurrency(order.total))}</span></div></div>
+<div class="total"><div class="sum"><span>Subtotal</span><strong>${escapeHtml(formatCurrency(order.subtotal))}</strong></div>${order.discount ? `<div class="sum"><span>Coupon discount</span><strong>−${escapeHtml(formatCurrency(order.discount))}</strong></div>` : ""}<div class="sum grand"><span>Total</span><span>${escapeHtml(formatCurrency(order.total))}</span></div></div>
 <div class="status"><strong>Order status:</strong> ${escapeHtml(order.orderStatus)} · <strong>Payment:</strong> Not configured</div>
 <footer class="foot">Thank you for choosing Araina. For assistance, contact ${escapeHtml(COMPANY_INFO.email)}.<br>This receipt confirms your order; payment collection is not enabled.</footer>
 </main><script>window.addEventListener("load",()=>window.print())</script></body></html>`;
@@ -115,6 +115,8 @@ const OrdersPage = () => {
   const [user, setUser] = useState(null);
   const [catalog, setCatalog] = useState([]);
   const [orders, setOrders] = useState([]);
+  const [coupons, setCoupons] = useState([]);
+  const [selectedCouponId, setSelectedCouponId] = useState("");
   const [selectedProductId, setSelectedProductId] = useState("");
   const [selectedVariantId, setSelectedVariantId] = useState("");
   const [selectedBoxes, setSelectedBoxes] = useState("");
@@ -132,16 +134,28 @@ const OrdersPage = () => {
     (item) => item.boxes === Number(selectedBoxes),
   );
   const subtotal = selectedTier ? selectedTier.boxes * selectedTier.pricePerBox : 0;
+  const selectedCoupon = coupons.find((coupon) => coupon.id === selectedCouponId);
+  const discount = selectedCoupon
+    ? Math.min(
+        subtotal,
+        selectedCoupon.discountType === "percentage"
+          ? Math.round((subtotal * selectedCoupon.discountValue) / 100)
+          : selectedCoupon.discountValue,
+      )
+    : 0;
+  const total = subtotal - discount;
 
   const loadOrderData = useCallback(async () => {
-    const [account, availableProducts, orderHistory] = await Promise.all([
+    const [account, availableProducts, orderHistory, availableCoupons] = await Promise.all([
       requestJson("/api/auth/me"),
       requestJson("/api/orders/catalog"),
       requestJson("/api/orders"),
+      requestJson("/api/orders/coupons"),
     ]);
     setUser(account);
     setCatalog(availableProducts);
     setOrders(orderHistory);
+    setCoupons(availableCoupons);
     const initialProduct = availableProducts[0];
     if (initialProduct) {
       setSelectedProductId(initialProduct.id);
@@ -262,6 +276,7 @@ const OrdersPage = () => {
           variantId: selectedVariantId,
           boxes: selectedTier.boxes,
           recipientType,
+          ...(selectedCouponId && { couponId: selectedCouponId }),
           ...(recipientType === "other" && {
             recipient: {
               fullName: recipient.fullName.trim(),
@@ -279,6 +294,8 @@ const OrdersPage = () => {
       });
       setPlacedOrder(order);
       setOrders((current) => [order, ...current]);
+      setCoupons((current) => current.filter((coupon) => coupon.id !== selectedCouponId));
+      setSelectedCouponId("");
       setActiveTab("order-history");
     } catch (submitError) {
       setError(submitError.message);
@@ -637,18 +654,43 @@ const OrdersPage = () => {
                     </div>
                   </div>
                   <div className="mt-5 space-y-3 border-t border-araina-pink/15 pt-4">
+                    {coupons.length > 0 && (
+                      <label className="block text-xs font-semibold text-araina-black/75">
+                        Apply a coupon
+                        <select
+                          value={selectedCouponId}
+                          onChange={(event) => setSelectedCouponId(event.target.value)}
+                          className={`${inputClass} mt-2`}
+                        >
+                          <option value="">No coupon</option>
+                          {coupons.map((coupon) => (
+                            <option key={coupon.id} value={coupon.id}>
+                              {coupon.discountType === "percentage"
+                                ? `${coupon.discountValue}% off`
+                                : `${formatCurrency(coupon.discountValue)} off`}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                    )}
                     <p className="flex justify-between text-sm">
                       <span className="text-araina-black/60">
                         Subtotal ({selectedTier?.boxes || 0} × {formatCurrency(selectedTier?.pricePerBox || 0)} per box)
                       </span>
                       <span className="font-semibold">{formatCurrency(subtotal)}</span>
                     </p>
+                    {discount > 0 && (
+                      <p className="flex justify-between text-sm text-green-700">
+                        <span>Coupon discount</span>
+                        <span>−{formatCurrency(discount)}</span>
+                      </p>
+                    )}
                     <p className="flex justify-between border-t border-araina-pink/15 pt-3">
                       <span className="font-bold">Total</span>
-                      <span className="text-xl font-bold text-araina-pink">{formatCurrency(subtotal)}</span>
+                      <span className="text-xl font-bold text-araina-pink">{formatCurrency(total)}</span>
                     </p>
                     <p className="text-xs text-araina-black/50">
-                      Payment is not configured yet. This action records the order only; no payment is collected.
+                      Payment is not configured yet. The coupon is redeemed when payment is confirmed.
                     </p>
                   </div>
                 </section>
@@ -664,7 +706,7 @@ const OrdersPage = () => {
                         Order total
                       </p>
                       <p className="mt-0.5 text-2xl font-bold tracking-tight text-araina-pink">
-                        {formatCurrency(subtotal)}
+                        {formatCurrency(total)}
                       </p>
                       <p className="mt-0.5 text-[11px] text-araina-black/50">
                         Payment is not collected online

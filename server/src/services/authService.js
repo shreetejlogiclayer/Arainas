@@ -1,4 +1,5 @@
 import { PrismaClient } from "@prisma/client";
+import { createHash } from "node:crypto";
 import {
   hashPassword,
   comparePassword,
@@ -80,7 +81,7 @@ const normalizeAddress = (address) => {
 /**
  * Register new user
  */
-export const registerUser = async (email, mobile, password) => {
+export const registerUser = async (email, mobile, password, referredByCode) => {
   // Normalize inputs
   const normalizedEmail = email?.trim() ? normalizeEmail(email) : null;
   const cleanedPhone = cleanPhone(mobile);
@@ -92,6 +93,23 @@ export const registerUser = async (email, mobile, password) => {
 
   if (!isValidIndianPhone(cleanedPhone)) {
     throw new Error("Invalid mobile number");
+  }
+
+  if (referredByCode != null && typeof referredByCode !== "string") {
+    throw new Error("Enter a valid referral code");
+  }
+  const normalizedReferralCode = referredByCode?.trim().toUpperCase() || null;
+  if (normalizedReferralCode && normalizedReferralCode.length > 50) {
+    throw new Error("Referral codes must be 50 characters or fewer");
+  }
+  const referrer = normalizedReferralCode
+    ? await prisma.profile.findUnique({
+        where: { referralCode: normalizedReferralCode },
+        select: { userId: true },
+      })
+    : null;
+  if (normalizedReferralCode && !referrer) {
+    throw new Error("Referral code was not found");
   }
 
   const passwordValidation = isValidPassword(password);
@@ -117,19 +135,32 @@ export const registerUser = async (email, mobile, password) => {
   const passwordHash = await hashPassword(password);
 
   // Create user with profile
-  const user = await prisma.user.create({
-    data: {
-      email: normalizedEmail,
-      mobile: cleanedPhone,
-      passwordHash,
-      profile: {
-        create: {
-          fullName: "", // Will be set during profile creation
-          referralCode: `ARAINA-${generateRandomCode(6)}`,
+  const user = await prisma.$transaction(async (transaction) => {
+    const createdUser = await transaction.user.create({
+      data: {
+        email: normalizedEmail,
+        mobile: cleanedPhone,
+        passwordHash,
+        profile: {
+          create: {
+            fullName: "", // Will be set during profile creation
+            referralCode: `ARAINA-${generateRandomCode(6)}`,
+            referredByCode: normalizedReferralCode,
+          },
         },
       },
-    },
-    include: { profile: true },
+      include: { profile: true },
+    });
+    if (referrer) {
+      await transaction.referral.create({
+        data: {
+          referrerUserId: referrer.userId,
+          referredUserId: createdUser.id,
+          referralCodeUsed: normalizedReferralCode,
+        },
+      });
+    }
+    return createdUser;
   });
 
   return {
@@ -373,20 +404,20 @@ export const updateUserProfile = async (userId, profileData) => {
   }
 
   let referrerUserId = null;
-  if (normalizedReferralCode && !existingProfile?.referredByCode) {
+  if (normalizedReferralCode) {
     const referrer = await prisma.profile.findUnique({
       where: { referralCode: normalizedReferralCode },
       select: { userId: true },
     });
 
-    if (!referrer) {
+    if (!referrer && existingProfile?.referredByCode !== normalizedReferralCode) {
       throw new Error("Referral code was not found");
     }
 
-    if (referrer.userId === userId) {
+    if (referrer?.userId === userId) {
       throw new Error("You cannot use your own referral code");
     }
-    referrerUserId = referrer.userId;
+    referrerUserId = referrer?.userId || null;
   }
 
   const profile = await prisma.$transaction(async (transaction) => {
@@ -399,15 +430,32 @@ export const updateUserProfile = async (userId, profileData) => {
       },
     });
     if (referrerUserId) {
-      await transaction.referral.create({
-        data: {
-          referrerUserId,
-          referredUserId: userId,
-          referralCodeUsed: normalizedReferralCode,
-          status: "completed",
-          completedAt: new Date(),
+      const referral = await transaction.referral.findUnique({
+        where: {
+          referrerUserId_referredUserId: {
+            referrerUserId,
+            referredUserId: userId,
+          },
         },
+        select: { id: true, status: true },
       });
+      if (!referral) {
+        await transaction.referral.create({
+          data: {
+            referrerUserId,
+            referredUserId: userId,
+            referralCodeUsed: normalizedReferralCode,
+            status: "completed",
+            completedAt: new Date(),
+          },
+        });
+      } else if (referral.status !== "completed") {
+        await transaction.referral.update({
+          where: { id: referral.id },
+          data: { status: "completed", completedAt: new Date() },
+        });
+      }
+      await issueReferralCoupons(transaction, referrerUserId);
     }
     const existingAddress = await transaction.address.findFirst({
       where: { userId },
@@ -528,10 +576,36 @@ export const deleteUserAddress = async (userId, addressId) =>
     }
   });
 
+const issueReferralCoupons = async (transaction, referrerUserId) => {
+  const completedReferrals = await transaction.referral.count({
+    where: { referrerUserId, status: "completed" },
+  });
+  const earnedCoupons = Math.floor(completedReferrals / 5);
+
+  for (let milestone = 1; milestone <= earnedCoupons; milestone += 1) {
+    const code = `REF-${createHash("sha256")
+      .update(`${referrerUserId}:${milestone}`)
+      .digest("hex")
+      .slice(0, 16)
+      .toUpperCase()}`;
+    await transaction.coupon.createMany({
+      data: [{
+        userId: referrerUserId,
+        code,
+        discountType: "percentage",
+        discountValue: 10,
+        source: "referral",
+      }],
+      skipDuplicates: true,
+    });
+  }
+};
+
 /**
  * Get user's referral info
  */
 export const getUserReferralInfo = async (userId) => {
+  await issueReferralCoupons(prisma, userId);
   const profile = await prisma.profile.findUnique({
     where: { userId },
   });
@@ -559,6 +633,8 @@ export const getUserReferralInfo = async (userId) => {
     where: {
       userId,
       status: "available",
+      orderId: null,
+      OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }],
     },
   });
 

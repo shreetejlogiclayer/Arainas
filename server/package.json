@@ -9,7 +9,8 @@
     "start": "node src/index.js",
     "migrate": "prisma migrate dev",
     "prisma": "prisma",
-    "seed": "node src/seed.js"
+    "seed": "node src/seed.js",
+    "admin:provision": "node src/scripts/provisionAdmin.js"
   },
   "keywords": [
     "araina",

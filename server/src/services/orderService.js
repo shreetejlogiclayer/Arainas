@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { prisma } from "./authService.js";
 import { cleanPhone, isValidIndianPhone } from "../utils/validators.js";
+import { calculateCouponDiscount } from "../utils/crypto.js";
 
 const addressFields = [
   "houseNumber",
@@ -83,6 +84,7 @@ const serializeOrder = (order) => ({
   subtotal: order.subtotal,
   discount: order.discount,
   total: order.total,
+  couponId: order.couponId,
   orderStatus: order.orderStatus,
   paymentStatus: order.paymentStatus,
   createdAt: order.createdAt,
@@ -132,6 +134,23 @@ export const getOrderCatalog = async () => {
   }));
 };
 
+export const getAvailableCoupons = async (userId) =>
+  prisma.coupon.findMany({
+    where: {
+      userId,
+      status: "available",
+      orderId: null,
+      OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }],
+    },
+    select: {
+      id: true,
+      discountType: true,
+      discountValue: true,
+      expiresAt: true,
+    },
+    orderBy: { createdAt: "asc" },
+  });
+
 export const ensureDefaultOrderCatalog = async () => {
   let product = await prisma.product.findUnique({
     where: { name: defaultProduct.name },
@@ -176,7 +195,7 @@ export const ensureDefaultOrderCatalog = async () => {
 };
 
 export const createOrder = async (userId, input) => {
-  const { variantId, boxes, recipientType } = input;
+  const { variantId, boxes, recipientType, couponId } = input;
   if (typeof variantId !== "string" || !variantId) {
     throw new Error("Select a product size or variant");
   }
@@ -185,6 +204,9 @@ export const createOrder = async (userId, input) => {
   }
   if (!["self", "other"].includes(recipientType)) {
     throw new Error("Choose whether this order is for you or someone else");
+  }
+  if (couponId != null && (typeof couponId !== "string" || !couponId)) {
+    throw new Error("Select a valid coupon");
   }
 
   const [variant, tier, user] = await Promise.all([
@@ -273,41 +295,197 @@ export const createOrder = async (userId, input) => {
   }
 
   const subtotal = tier.boxes * tier.pricePerBox;
-  const order = await prisma.order.create({
-    data: {
-      orderNumber: `AR-${Date.now()}-${randomUUID().slice(0, 8).toUpperCase()}`,
-      userId,
-      orderedByName: user.profile.fullName.trim(),
-      orderedByMobile: cleanPhone(user.mobile),
-      recipientType,
-      deliveryRecipientName: recipient.name,
-      subtotal,
-      discount: 0,
-      total: subtotal,
-      paymentStatus: "not_configured",
-      orderStatus: "pending",
-      items: {
-        create: {
-          productNameSnapshot: variant.product.name,
-          sizeSnapshot: variant.name,
-          quantityBoxes: tier.boxes,
-          pricePerBoxSnapshot: tier.pricePerBox,
+  const orderId = randomUUID();
+  const order = await prisma.$transaction(async (transaction) => {
+    let coupon = null;
+    let discount = 0;
+    if (couponId) {
+      coupon = await transaction.coupon.findFirst({
+        where: {
+          id: couponId,
+          userId,
+          status: "available",
+          orderId: null,
+          OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }],
+        },
+      });
+      if (!coupon) throw new Error("That coupon is no longer available");
+      discount = Math.max(
+        0,
+        Math.min(
           subtotal,
+          calculateCouponDiscount(
+            subtotal,
+            coupon.discountType,
+            coupon.discountValue,
+          ),
+        ),
+      );
+      const reserved = await transaction.coupon.updateMany({
+        where: {
+          id: coupon.id,
+          userId,
+          status: "available",
+          orderId: null,
+          OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }],
+        },
+        data: { orderId },
+      });
+      if (reserved.count !== 1) {
+        throw new Error("That coupon is no longer available");
+      }
+    }
+
+    return transaction.order.create({
+      data: {
+        id: orderId,
+        orderNumber: `AR-${Date.now()}-${randomUUID().slice(0, 8).toUpperCase()}`,
+        userId,
+        orderedByName: user.profile.fullName.trim(),
+        orderedByMobile: cleanPhone(user.mobile),
+        recipientType,
+        deliveryRecipientName: recipient.name,
+        subtotal,
+        discount,
+        total: subtotal - discount,
+        couponId: coupon?.id || null,
+        paymentStatus: "not_configured",
+        orderStatus: "pending",
+        items: {
+          create: {
+            productNameSnapshot: variant.product.name,
+            sizeSnapshot: variant.name,
+            quantityBoxes: tier.boxes,
+            pricePerBoxSnapshot: tier.pricePerBox,
+            subtotal,
+          },
+        },
+        deliveryAddress: {
+          create: {
+            ...address,
+            recipientMobile: recipient.mobile,
+            recipientAlternateMobile: recipient.alternateMobile,
+            country: "India",
+          },
         },
       },
-      deliveryAddress: {
-        create: {
-          ...address,
-          recipientMobile: recipient.mobile,
-          recipientAlternateMobile: recipient.alternateMobile,
-          country: "India",
-        },
-      },
-    },
-    include: { items: true, deliveryAddress: true },
+      include: { items: true, deliveryAddress: true },
+    });
   });
 
   return serializeOrder(order);
+};
+
+export const updateOrderPaymentStatus = async (orderId, paymentStatus) => {
+  if (!["pending", "success", "failed"].includes(paymentStatus)) {
+    throw new Error("Select a valid payment status");
+  }
+
+  return prisma.$transaction(async (transaction) => {
+    const existingOrder = await transaction.order.findUnique({
+      where: { id: orderId },
+      select: { id: true, userId: true, couponId: true, paymentStatus: true },
+    });
+    if (!existingOrder) throw new Error("Order not found");
+    if (existingOrder.paymentStatus === "success") {
+      if (paymentStatus !== "success") {
+        throw new Error("A successful payment cannot be changed");
+      }
+      const completedOrder = await transaction.order.findUnique({
+        where: { id: orderId },
+        include: { items: true, deliveryAddress: true },
+      });
+      return serializeOrder(completedOrder);
+    }
+
+    const changed = await transaction.order.updateMany({
+      where: { id: orderId, paymentStatus: existingOrder.paymentStatus },
+      data: { paymentStatus },
+    });
+    if (changed.count !== 1) {
+      throw new Error("Payment status changed; reload the order and retry");
+    }
+    const order = await transaction.order.findUnique({
+      where: { id: orderId },
+      include: { items: true, deliveryAddress: true },
+    });
+
+    if (
+      existingOrder.couponId &&
+      paymentStatus === "pending" &&
+      existingOrder.paymentStatus === "failed"
+    ) {
+      const reserved = await transaction.coupon.updateMany({
+        where: {
+          id: existingOrder.couponId,
+          userId: existingOrder.userId,
+          orderId: null,
+          status: "available",
+          OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }],
+        },
+        data: { orderId },
+      });
+      if (reserved.count !== 1) {
+        throw new Error("The order coupon is no longer available");
+      }
+    } else if (
+      existingOrder.couponId &&
+      paymentStatus === "success" &&
+      existingOrder.paymentStatus !== "success"
+    ) {
+      let redeemed = await transaction.coupon.updateMany({
+        where: {
+          id: existingOrder.couponId,
+          userId: existingOrder.userId,
+          orderId,
+          status: "available",
+        },
+        data: { status: "used", usedAt: new Date() },
+      });
+      if (redeemed.count !== 1) {
+        const reclaimed = await transaction.coupon.updateMany({
+          where: {
+            id: existingOrder.couponId,
+            userId: existingOrder.userId,
+            orderId: null,
+            status: "available",
+            OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }],
+          },
+          data: { orderId },
+        });
+        if (reclaimed.count === 1) {
+          redeemed = await transaction.coupon.updateMany({
+            where: {
+              id: existingOrder.couponId,
+              userId: existingOrder.userId,
+              orderId,
+              status: "available",
+            },
+            data: { status: "used", usedAt: new Date() },
+          });
+        }
+      }
+      if (redeemed.count !== 1) {
+        throw new Error("The order coupon could not be redeemed");
+      }
+    } else if (
+      existingOrder.couponId &&
+      paymentStatus === "failed" &&
+      existingOrder.paymentStatus !== "success"
+    ) {
+      await transaction.coupon.updateMany({
+        where: {
+          id: existingOrder.couponId,
+          userId: existingOrder.userId,
+          orderId,
+          status: "available",
+        },
+        data: { orderId: null },
+      });
+    }
+
+    return serializeOrder(order);
+  });
 };
 
 export const getUserOrders = async (userId) => {
