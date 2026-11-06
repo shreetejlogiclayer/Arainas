@@ -247,7 +247,7 @@ const Navbar = ({ activeSection, setActiveSection }) => {
           </nav>
 
           {/* ==================== DESKTOP JOIN CTA ==================== */}
-          <div className="hidden xl:block flex-shrink-0">
+          {/* <div className="hidden xl:block flex-shrink-0">
             <button
               onClick={handleJoinUsClick}
               className="
@@ -271,17 +271,17 @@ const Navbar = ({ activeSection, setActiveSection }) => {
             >
               Become a Member
             </button>
-          </div>
+          </div> */}
 
           {/* ==================== MOBILE JOIN CTA ==================== */}
-          <button
+          {/* <button
             onClick={handleJoinUsClick}
             aria-label="Become a Member"
             className="araina-heartbeat xl:hidden mr-1 flex-shrink-0 whitespace-nowrap rounded-full bg-araina-pink px-2 py-2 text-[9px] font-semibold uppercase tracking-wide text-araina-white shadow-md shadow-araina-pink/20 transition-all duration-300 hover:bg-araina-pink/90 hover:shadow-lg min-[360px]:px-3 min-[360px]:text-[10px] sm:px-4 sm:text-xs"
           >
             <span className="min-[360px]:hidden">Join</span>
             <span className="hidden min-[360px]:inline">Become a Member</span>
-          </button>
+          </button> */}
 
           {/* ==================== MOBILE MENU TOGGLE ==================== */}
           <button
