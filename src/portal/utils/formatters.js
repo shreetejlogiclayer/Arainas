@@ -91,16 +91,6 @@ export const isValidPIN = (pin) => {
 };
 
 /**
- * Validate email
- * @param {string} email - Email to validate
- * @returns {boolean} True if valid email
- */
-export const isValidEmail = (email) => {
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  return emailRegex.test(email);
-};
-
-/**
  * Validate password strength
  * @param {string} password - Password to validate
  * @returns {object} { isValid: boolean, errors: string[] }

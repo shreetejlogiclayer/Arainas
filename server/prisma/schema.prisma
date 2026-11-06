@@ -237,6 +237,7 @@ model Order {
   // Payment & Status
   paymentStatus   String   @default("not_configured") @db.VarChar(50) // not_configured, pending, success, failed
   orderStatus     String   @default("pending") @db.VarChar(50) // pending, processing, shipped, delivered, cancelled
+  parcelSummaryDownloaded Boolean @default(false)
   
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
@@ -306,7 +307,7 @@ model Payment {
   id              String   @id @default(cuid())
   orderId         String   @unique
   status          String   @default("pending") @db.VarChar(50) // pending, success, failed, refunded
-  provider        String   @db.VarChar(50) // razorpay, cashfree, etc.
+  provider        String   @db.VarChar(50) // payu, razorpay, cashfree, etc.
   transactionId   String?  @db.VarChar(255)
   amount          Int // Amount in rupees
   createdAt       DateTime @default(now())
@@ -332,4 +333,12 @@ model PasswordResetToken {
 
   @@index([userId])
   @@index([token])
+}
+
+model Session {
+  sid       String   @id @db.VarChar(255)
+  data      String   @db.LongText
+  expiresAt DateTime @db.DateTime(3)
+
+  @@index([expiresAt])
 }

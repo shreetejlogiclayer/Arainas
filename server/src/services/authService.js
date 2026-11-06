@@ -8,7 +8,6 @@ import {
 import {
   normalizeEmail,
   cleanPhone,
-  isValidEmail,
   isValidIndianPhone,
   isValidAadhaar,
   isValidPassword,
@@ -81,16 +80,10 @@ const normalizeAddress = (address) => {
 /**
  * Register new user
  */
-export const registerUser = async (email, mobile, password, referredByCode) => {
-  // Normalize inputs
-  const normalizedEmail = email?.trim() ? normalizeEmail(email) : null;
+export const registerUser = async (mobile, password, referredByCode) => {
   const cleanedPhone = cleanPhone(mobile);
 
   // Validate inputs
-  if (normalizedEmail && !isValidEmail(normalizedEmail)) {
-    throw new Error("Invalid email format");
-  }
-
   if (!isValidIndianPhone(cleanedPhone)) {
     throw new Error("Invalid mobile number");
   }
@@ -119,16 +112,11 @@ export const registerUser = async (email, mobile, password, referredByCode) => {
 
   // Check if user already exists
   const existingUser = await prisma.user.findFirst({
-    where: {
-      OR: [
-        { mobile: cleanedPhone },
-        ...(normalizedEmail ? [{ email: normalizedEmail }] : []),
-      ],
-    },
+    where: { mobile: cleanedPhone },
   });
 
   if (existingUser) {
-    throw new Error("Email or mobile number already registered");
+    throw new Error("Mobile number already registered");
   }
 
   // Hash password
@@ -138,7 +126,6 @@ export const registerUser = async (email, mobile, password, referredByCode) => {
   const user = await prisma.$transaction(async (transaction) => {
     const createdUser = await transaction.user.create({
       data: {
-        email: normalizedEmail,
         mobile: cleanedPhone,
         passwordHash,
         profile: {
@@ -165,7 +152,6 @@ export const registerUser = async (email, mobile, password, referredByCode) => {
 
   return {
     userId: user.id,
-    email: user.email,
     mobile: user.mobile,
     referralCode: user.profile.referralCode,
   };
@@ -200,9 +186,7 @@ export const loginUser = async (mobile, password) => {
 
   return {
     userId: user.id,
-    email: user.email,
     mobile: user.mobile,
-    emailVerified: user.emailVerified,
     mobileVerified: user.mobileVerified,
     profile: user.profile
       ? {
@@ -234,10 +218,8 @@ export const getUserById = async (userId) => {
 
   return {
     userId: user.id,
-    email: user.email,
     mobile: user.mobile,
     role: user.role,
-    emailVerified: user.emailVerified,
     mobileVerified: user.mobileVerified,
     status: user.status,
     createdAt: user.createdAt,

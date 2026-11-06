@@ -1,15 +1,8 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect } from "react";
 import { motion } from "framer-motion";
 import {
-  ShieldCheck,
-  CircleCheck,
-  Sparkles,
-  Layers,
-  Heart,
   ArrowRight,
-  Package,
   Info,
-  ChevronDown,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 
@@ -17,8 +10,6 @@ const ProductsPage = () => {
   useEffect(() => {
     document.title = "Products & Services | Araina - Feminine Wellness";
   }, []);
-
-  const [activeTab, setActiveTab] = useState("features");
 
   const layersList = [
     {
@@ -170,12 +161,12 @@ const ProductsPage = () => {
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ duration: 0.8 }}
-                className="relative max-w-[400px] w-full bg-gradient-to-br from-araina-pink/5 to-araina-blue/5 border border-araina-pink/15 rounded-3xl p-8 shadow-lg"
+                className="relative max-w-[400px] w-full bg-gradient-to-br from-araina-pink/5 to-araina-blue/5 border border-araina-pink/15 rounded-[3rem_1rem_3rem_1rem] p-6 shadow-lg"
               >
                 <img
-                  src="/assets/product/araina-product.png"
-                  alt="Araina Sanitary Pad Package Showcase"
-                  className="w-full h-auto object-contain rounded-2xl shadow-md border border-white/80 hover:scale-105 transition-transform duration-500"
+                  src="/assets/images/campaign/menstrual-care-blue.jpg"
+                  alt="Araina sanitary pad styled against a soft blue background"
+                  className="aspect-[4/3] w-full rounded-[inherit] object-cover shadow-md border border-white/80 transition-transform duration-500 hover:scale-[1.02]"
                 />
                 <div className="mt-4 p-3 bg-araina-white/90 rounded-xl border border-araina-pink/10 text-center">
                   <span className="text-[10px] uppercase font-bold tracking-widest text-araina-pink block">
@@ -196,11 +187,11 @@ const ProductsPage = () => {
         <div className="max-w-7xl mx-auto px-6">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
             <div className="lg:col-span-6">
-              <div className="rounded-3xl overflow-hidden border border-araina-pink/10 shadow-md">
+              <div className="overflow-hidden rounded-[4rem_1rem_4rem_1rem] border border-araina-pink/10 shadow-md">
                 <img
-                  src="/assets/images/araina_product_lifestyle.png"
-                  alt="Araina Organic Comfort & Wellness Lifestyle"
-                  className="w-full h-auto object-cover hover:scale-105 transition-transform duration-700"
+                  src="/assets/images/campaign/product-range.jpg"
+                  alt="Araina sanitary pad presented on a soft blue background"
+                  className="h-full min-h-[360px] w-full object-cover transition-transform duration-700 hover:scale-105"
                 />
               </div>
             </div>
@@ -262,9 +253,9 @@ const ProductsPage = () => {
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-center">
             <div className="lg:col-span-4 flex justify-center">
               <img
-                src="/assets/images/pad image.png"
-                alt="Illustration of the sanitary pad's protective layers"
-                className="w-full max-w-sm max-h-[520px] object-contain"
+                src="/assets/images/pad%20image.png"
+                alt="Araina sanitary pad layer and material diagram"
+                className="block h-auto w-full max-w-sm object-contain"
               />
             </div>
 

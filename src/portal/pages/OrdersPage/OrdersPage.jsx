@@ -18,6 +18,8 @@ import {
   isValidIndianPhone,
   isValidPIN,
 } from "../../utils/formatters";
+import { getPortalErrorMessage } from "../../utils/errorMessages";
+import { requestPortalJson } from "../../utils/portalApi";
 import { COMPANY_INFO } from "../../../config/siteConfig";
 
 const blankRecipient = {
@@ -57,6 +59,13 @@ const getAddressLines = (address = {}) => [
   address.country || "India",
 ].filter(Boolean);
 
+const getPaymentStatusLabel = (status) => {
+  if (status === "success") return "Payment successful";
+  if (status === "pending") return "Payment pending verification";
+  if (status === "failed") return "Payment failed";
+  return "Payment not configured";
+};
+
 const getInvoiceHtml = (order) => {
   const item = order.items?.[0] || {};
   const recipient = order.recipient || {};
@@ -64,6 +73,15 @@ const getInvoiceHtml = (order) => {
   const addressHtml = getAddressLines({ ...address, country: recipient.country })
     .map((line) => `<div>${escapeHtml(line)}</div>`)
     .join("");
+  const paymentStatus = getPaymentStatusLabel(order.paymentStatus);
+  const paymentDetails = order.payment?.status === "success"
+    ? `<div class="status"><strong>Payment method:</strong> ${escapeHtml(order.payment.provider === "payu" ? "PayU" : order.payment.provider)} · <strong>Payment reference:</strong> ${escapeHtml(order.payment.transactionId || "Not available")} · <strong>Paid:</strong> ${escapeHtml(formatDateTime(order.payment.paidAt))}</div>`
+    : "";
+  const paymentFooter = order.paymentStatus === "success"
+    ? "This receipt confirms your order and verified payment."
+    : order.paymentStatus === "not_configured"
+      ? "This receipt confirms your order; online payment collection is not enabled."
+      : "This receipt confirms your order; payment confirmation is pending.";
 
   return `<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
@@ -71,7 +89,7 @@ const getInvoiceHtml = (order) => {
 <style>
 *{box-sizing:border-box}body{margin:0;padding:32px;background:#f7f7f7;color:#202020;font:14px Arial,sans-serif;line-height:1.55}
 .sheet{max-width:850px;margin:auto;background:#fff;padding:48px;border:1px solid #f1dce1;border-radius:18px;box-shadow:0 12px 36px #ef5f7d14}
-.brand{color:#ef5f7d;font-size:28px;font-weight:800;letter-spacing:.12em}.tag{color:#6cadba;font-size:11px;font-weight:bold;letter-spacing:.16em;text-transform:uppercase}
+.brand-logo{display:block;width:180px;height:auto;max-height:72px;object-fit:contain;object-position:left center;margin:0 0 16px}
 .top{display:flex;justify-content:space-between;gap:24px;align-items:flex-start;padding-bottom:24px;border-bottom:2px solid #ef5f7d}.muted{color:#6b7280;font-size:12px}.right{text-align:right}.title{font-size:24px;font-weight:800;letter-spacing:.08em}.number{color:#ef5f7d;font-weight:bold}
 .people{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin:28px 0}.card{padding:18px;border:1px solid #f2e1e5;border-radius:12px}.label{margin:0 0 10px;color:#ef5f7d;font-weight:bold;font-size:10px;letter-spacing:.13em;text-transform:uppercase}.person{font-weight:bold}.info{color:#555;font-size:12px;margin-top:4px;overflow-wrap:anywhere}
 table{width:100%;border-collapse:collapse;margin:16px 0 24px}th{text-align:left;background:#fff4f6;color:#444;font-size:10px;letter-spacing:.1em;text-transform:uppercase}th,td{padding:13px 10px;border-bottom:1px solid #f1e7e9}td:last-child,th:last-child{text-align:right}.total{margin-left:auto;width:min(100%,340px);padding:18px;border-radius:12px;background:#fff5f7}.sum{display:flex;justify-content:space-between;margin:7px 0}.grand{border-top:1px solid #ef5f7d;padding-top:12px;margin-top:12px;font-size:18px;font-weight:bold;color:#ef5f7d}
@@ -79,22 +97,15 @@ table{width:100%;border-collapse:collapse;margin:16px 0 24px}th{text-align:left;
 @media(max-width:600px){body{padding:10px}.sheet{padding:22px 16px;border-radius:12px}.top{flex-direction:column}.right{text-align:left}.people{grid-template-columns:1fr;gap:10px}th,td{padding:9px 5px;font-size:11px}}
 @media print{body{padding:0;background:#fff}.sheet{max-width:none;padding:24px;border:0;border-radius:0;box-shadow:none}@page{size:A4;margin:14mm}}
 </style></head><body><main class="sheet">
-<header class="top"><div><div class="brand">${escapeHtml(COMPANY_INFO.brand)}</div><div class="tag">${escapeHtml(COMPANY_INFO.tagline)}</div><p><strong>${escapeHtml(COMPANY_INFO.name)}</strong><br><span class="muted">${escapeHtml(COMPANY_INFO.address)}<br>${escapeHtml(COMPANY_INFO.phone)} · ${escapeHtml(COMPANY_INFO.email)}</span></p></div><div class="right"><div class="title">ORDER RECEIPT</div><div class="number">#${escapeHtml(order.orderNumber)}</div><div class="muted">${escapeHtml(formatDateTime(order.createdAt))}</div></div></header>
+<header class="top"><div><img class="brand-logo" src="/assets/logo/araina-logo-dark.png" alt="ARAINA — Empowering To Rise"><p><strong>${escapeHtml(COMPANY_INFO.name)}</strong><br><span class="muted">${escapeHtml(COMPANY_INFO.address)}<br>${escapeHtml(COMPANY_INFO.phone)}</span></p></div><div class="right"><div class="title">ORDER RECEIPT</div><div class="number">#${escapeHtml(order.orderNumber)}</div><div class="muted">${escapeHtml(formatDateTime(order.createdAt))}</div></div></header>
 <section class="people"><div class="card"><p class="label">Ordered by</p><div class="person">${escapeHtml(order.orderedByName)}</div><div class="info">${escapeHtml(formatPhone(order.orderedByMobile || ""))}</div></div><div class="card"><p class="label">Ordered for · ${order.recipientType === "other" ? "Someone else" : "Myself"}</p><div class="person">${escapeHtml(recipient.name || order.deliveryRecipientName)}</div><div class="info">${escapeHtml(formatPhone(recipient.mobile || ""))}${recipient.alternateMobile ? ` · Alt: ${escapeHtml(formatPhone(recipient.alternateMobile))}` : ""}</div><div class="info">${addressHtml}</div></div></section>
-<p class="label">Order details</p><table><thead><tr><th>Product & variant</th><th>Boxes</th><th>Price / box</th><th>Amount</th></tr></thead><tbody><tr><td><strong>${escapeHtml(item.product || "Araina Sanitary Pads")}</strong><br><span class="muted">${escapeHtml(item.variant)}</span></td><td>${escapeHtml(item.boxes)}</td><td>${escapeHtml(formatCurrency(item.pricePerBox || 0))}</td><td>${escapeHtml(formatCurrency(item.subtotal || 0))}</td></tr></tbody></table>
+<p class="label">Order details</p><table><thead><tr><th>Product</th><th>Maga Boxes</th><th>Rate / Maga Box</th><th>Amount</th></tr></thead><tbody><tr><td><strong>${escapeHtml(item.product || "Araina Sanitary Pads")}</strong></td><td>${escapeHtml(item.boxes)}</td><td>${escapeHtml(formatCurrency(item.pricePerBox || 0))}</td><td>${escapeHtml(formatCurrency(item.subtotal || 0))}</td></tr></tbody></table>
 <div class="total"><div class="sum"><span>Subtotal</span><strong>${escapeHtml(formatCurrency(order.subtotal))}</strong></div>${order.discount ? `<div class="sum"><span>Coupon discount</span><strong>−${escapeHtml(formatCurrency(order.discount))}</strong></div>` : ""}<div class="sum grand"><span>Total</span><span>${escapeHtml(formatCurrency(order.total))}</span></div></div>
-<div class="status"><strong>Order status:</strong> ${escapeHtml(order.orderStatus)} · <strong>Payment:</strong> Not configured</div>
-<footer class="foot">Thank you for choosing Araina. For assistance, contact ${escapeHtml(COMPANY_INFO.email)}.<br>This receipt confirms your order; payment collection is not enabled.</footer>
+<div class="status"><strong>Order status:</strong> ${escapeHtml(order.orderStatus)} · <strong>Payment:</strong> ${escapeHtml(paymentStatus)}</div>
+${paymentDetails}
+<div class="status"><strong>Courier delivery:</strong> If applicable, extra courier charges are payable directly to the courier upon delivery and are not included in the order total.</div>
+<footer class="foot">Thank you for choosing Araina. For assistance, contact ${escapeHtml(COMPANY_INFO.phone)}.<br>${escapeHtml(paymentFooter)}</footer>
 </main><script>window.addEventListener("load",()=>window.print())</script></body></html>`;
-};
-
-const requestJson = async (url, options = {}) => {
-  const response = await fetch(url, { credentials: "include", ...options });
-  const result = await response.json();
-  if (!response.ok) {
-    throw new Error(result.error?.message || "Unable to complete the request.");
-  }
-  return result.data;
 };
 
 const addressFieldSpecs = [
@@ -113,13 +124,18 @@ const addressFieldSpecs = [
 const OrdersPage = () => {
   const [activeTab, setActiveTab] = useState("place-order");
   const [user, setUser] = useState(null);
+  const [paymentConfig, setPaymentConfig] = useState({ enabled: false });
+  const [paymentEmail, setPaymentEmail] = useState("");
+  const [paymentFeedback, setPaymentFeedback] = useState("");
+  const [paymentFailed, setPaymentFailed] = useState(false);
+  const [receiptOrder, setReceiptOrder] = useState(null);
   const [catalog, setCatalog] = useState([]);
   const [orders, setOrders] = useState([]);
   const [coupons, setCoupons] = useState([]);
   const [selectedCouponId, setSelectedCouponId] = useState("");
   const [selectedProductId, setSelectedProductId] = useState("");
-  const [selectedVariantId, setSelectedVariantId] = useState("");
   const [selectedBoxes, setSelectedBoxes] = useState("");
+  const [deliveryMethod, setDeliveryMethod] = useState("courier");
   const [recipientType, setRecipientType] = useState("self");
   const [recipient, setRecipient] = useState(blankRecipient);
   const [placedOrder, setPlacedOrder] = useState(null);
@@ -129,7 +145,6 @@ const OrdersPage = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const product = catalog.find((item) => item.id === selectedProductId);
-  const selectedVariant = product?.variants.find((item) => item.id === selectedVariantId);
   const selectedTier = product?.quantities.find(
     (item) => item.boxes === Number(selectedBoxes),
   );
@@ -144,22 +159,51 @@ const OrdersPage = () => {
       )
     : 0;
   const total = subtotal - discount;
+  const orderRecipientType =
+    deliveryMethod === "hand" ? "self" : recipientType;
 
   const loadOrderData = useCallback(async () => {
-    const [account, availableProducts, orderHistory, availableCoupons] = await Promise.all([
-      requestJson("/api/auth/me"),
-      requestJson("/api/orders/catalog"),
-      requestJson("/api/orders"),
-      requestJson("/api/orders/coupons"),
+    const [account, availableProducts, orderHistory, availableCoupons, paymentOptions] = await Promise.all([
+      requestPortalJson("/api/auth/me"),
+      requestPortalJson("/api/orders/catalog"),
+      requestPortalJson("/api/orders"),
+      requestPortalJson("/api/orders/coupons"),
+      requestPortalJson("/api/orders/payment-config"),
     ]);
+    if (
+      !account ||
+      !Array.isArray(availableProducts) ||
+      !Array.isArray(orderHistory) ||
+      !Array.isArray(availableCoupons) ||
+      !paymentOptions ||
+      typeof paymentOptions !== "object"
+    ) {
+      throw new Error("We couldn’t load your order information. Please refresh and try again.");
+    }
     setUser(account);
     setCatalog(availableProducts);
     setOrders(orderHistory);
     setCoupons(availableCoupons);
+    setPaymentConfig(paymentOptions);
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("payment") === "success") {
+      const verifiedOrder = orderHistory.find(
+        (order) =>
+          order.orderNumber === params.get("order") &&
+          order.paymentStatus === "success",
+      );
+      if (verifiedOrder) {
+        setReceiptOrder(verifiedOrder);
+        setPaymentFeedback("Your payment is confirmed and your order is complete.");
+      } else {
+        setPaymentFeedback(
+          "We’re still confirming your payment. Your order will appear here once it’s verified. Please don’t pay again yet.",
+        );
+      }
+    }
     const initialProduct = availableProducts[0];
     if (initialProduct) {
       setSelectedProductId(initialProduct.id);
-      setSelectedVariantId(initialProduct.variants[0]?.id || "");
       setSelectedBoxes(String(initialProduct.quantities[0]?.boxes || ""));
     }
     const address = account.address || {};
@@ -178,9 +222,67 @@ const OrdersPage = () => {
 
   useEffect(() => {
     loadOrderData()
-      .catch((loadError) => setError(loadError.message))
+      .catch((loadError) =>
+        setError(
+          getPortalErrorMessage(
+            loadError,
+            "We couldn’t load your orders. Please refresh and try again.",
+          ),
+        ),
+      )
       .finally(() => setIsLoading(false));
   }, [loadOrderData]);
+
+  useEffect(() => {
+    const status = new URLSearchParams(window.location.search).get("payment");
+    if (!status) return;
+
+    const messages = {
+      success: "Your payment is being confirmed.",
+      failed:
+        "Your payment could not be completed, so your order was not placed. Please try again.",
+      pending:
+        "Your payment is still being confirmed. Please don’t pay again yet; check your order history shortly.",
+      verification_failed:
+        "We couldn’t confirm your payment yet, so your order is not marked as paid. If your account was charged, please contact Araina support before trying again.",
+    };
+    setPaymentFeedback(
+      messages[status] ||
+        "We couldn’t confirm your payment yet. Please check your order history or contact Araina support.",
+    );
+    setPaymentFailed(status === "failed");
+    setActiveTab("order-history");
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+    const refreshCatalog = async () => {
+      if (document.visibilityState !== "visible") return;
+      try {
+        const latestCatalog = await requestPortalJson("/api/orders/catalog");
+        if (active) setCatalog(latestCatalog);
+      } catch (refreshError) {
+        if (active) {
+          setError(
+            getPortalErrorMessage(
+              refreshError,
+              "We couldn’t refresh product availability. Please try again.",
+            ),
+          );
+        }
+      }
+    };
+    const refreshOnFocus = () => refreshCatalog();
+    const timer = window.setInterval(refreshCatalog, 5000);
+    window.addEventListener("focus", refreshOnFocus);
+    document.addEventListener("visibilitychange", refreshOnFocus);
+    return () => {
+      active = false;
+      window.clearInterval(timer);
+      window.removeEventListener("focus", refreshOnFocus);
+      document.removeEventListener("visibilitychange", refreshOnFocus);
+    };
+  }, []);
 
   const changeRecipientType = (type) => {
     setRecipientType(type);
@@ -222,14 +324,16 @@ const OrdersPage = () => {
   };
 
   const validateRecipient = () => {
-    if (recipientType === "self") {
+    if (orderRecipientType === "self") {
       const issues = {};
       if (!user?.profile?.fullName?.trim()) {
         issues.self = "Complete your profile before placing an order.";
       }
       if (!user?.mobile) issues.self = "Your account mobile number is unavailable.";
       if (!user?.address) {
-        issues.self = "Add a delivery address to your profile, or choose “Someone else”.";
+        issues.self = deliveryMethod === "hand"
+          ? "Add a delivery address to your profile before placing a hand-delivered order."
+          : "Add a delivery address to your profile, or choose “Someone else”.";
       }
       setFieldErrors(issues);
       return Object.keys(issues).length === 0;
@@ -261,23 +365,30 @@ const OrdersPage = () => {
   const placeOrder = async (event) => {
     event.preventDefault();
     setError("");
-    if (!selectedVariantId || !selectedTier) {
-      setError("Choose an available product size and quantity.");
+    if (!selectedTier) {
+      setError("Choose an available order quantity.");
+      return;
+    }
+    if (
+      paymentConfig.enabled &&
+      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(paymentEmail.trim())
+    ) {
+      setError("Enter a valid email address for PayU checkout.");
       return;
     }
     if (!validateRecipient()) return;
 
     setIsSubmitting(true);
     try {
-      const order = await requestJson("/api/orders", {
+      const result = await requestPortalJson("/api/orders", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          variantId: selectedVariantId,
           boxes: selectedTier.boxes,
-          recipientType,
+          recipientType: orderRecipientType,
+          ...(paymentConfig.enabled && { paymentEmail: paymentEmail.trim() }),
           ...(selectedCouponId && { couponId: selectedCouponId }),
-          ...(recipientType === "other" && {
+          ...(orderRecipientType === "other" && {
             recipient: {
               fullName: recipient.fullName.trim(),
               mobile: recipient.mobile,
@@ -292,13 +403,46 @@ const OrdersPage = () => {
           }),
         }),
       });
+      const order = result.order || result;
+      if (result.checkout) {
+        if (
+          typeof result.checkout.action !== "string" ||
+          !/^https:\/\/(?:test\.payu\.in|secure\.payu\.in)\/_payment$/.test(
+            result.checkout.action,
+          ) ||
+          !result.checkout.fields ||
+          typeof result.checkout.fields !== "object"
+        ) {
+          throw new Error(
+            "We couldn’t open secure payment. No payment was taken. Please return to your orders or contact support before trying again.",
+          );
+        }
+        const form = document.createElement("form");
+        form.method = "POST";
+        form.action = result.checkout.action;
+        Object.entries(result.checkout.fields).forEach(([name, value]) => {
+          const field = document.createElement("input");
+          field.type = "hidden";
+          field.name = name;
+          field.value = String(value);
+          form.appendChild(field);
+        });
+        document.body.appendChild(form);
+        form.submit();
+        return;
+      }
       setPlacedOrder(order);
       setOrders((current) => [order, ...current]);
       setCoupons((current) => current.filter((coupon) => coupon.id !== selectedCouponId));
       setSelectedCouponId("");
       setActiveTab("order-history");
     } catch (submitError) {
-      setError(submitError.message);
+      setError(
+        getPortalErrorMessage(
+          submitError,
+          "We couldn’t start your order. Please try again.",
+        ),
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -306,7 +450,7 @@ const OrdersPage = () => {
 
   const orderedByName = user?.profile?.fullName?.trim() || "Profile name required";
   const orderedByMobile = user?.mobile ? formatPhone(user.mobile) : "Mobile unavailable";
-  const recipientPreview = recipientType === "self"
+  const recipientPreview = orderRecipientType === "self"
     ? {
         name: user?.profile?.fullName,
         mobile: user?.mobile,
@@ -397,10 +541,35 @@ const OrdersPage = () => {
             {!catalog.length ? (
               <section className="rounded-2xl border border-amber-200 bg-amber-50 p-5 text-sm text-amber-900">
                 No orderable products are configured yet. Add an active product,
-                variant, and pricing tier in the database before placing orders.
+                and pricing tiers in the database before placing orders.
               </section>
             ) : (
               <>
+                {paymentFeedback && (
+                  <div
+                    role="status"
+                    className={`rounded-xl border p-4 text-sm ${
+                      receiptOrder
+                        ? "border-green-200 bg-green-50 text-green-800"
+                        : "border-amber-200 bg-amber-50 text-amber-900"
+                    }`}
+                  >
+                    {paymentFeedback}
+                    {paymentFailed && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setActiveTab("place-order");
+                          setPaymentFeedback("");
+                          setPaymentFailed(false);
+                        }}
+                        className="ml-2 font-semibold underline"
+                      >
+                        Try again
+                      </button>
+                    )}
+                  </div>
+                )}
                 <section className="rounded-2xl border border-araina-pink/15 bg-white p-5 shadow-sm sm:p-7">
                   <div className="mb-5 flex items-center gap-3">
                     <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-araina-pink/10 text-araina-pink">
@@ -409,7 +578,7 @@ const OrdersPage = () => {
                     <div>
                       <h2 className="font-semibold text-araina-black">Choose your product</h2>
                       <p className="mt-1 text-xs text-araina-black/55">
-                        Product name is fixed. Select an available size and quantity.
+                        Product name is fixed. Select an available quantity.
                       </p>
                     </div>
                   </div>
@@ -425,51 +594,36 @@ const OrdersPage = () => {
                     </p>
                   </div>
 
-                  <label className="mt-5 block text-xs font-semibold uppercase tracking-wider text-araina-black/75">
-                    Size / variant <span className="text-araina-pink">*</span>
-                    <select
-                      required
-                      value={selectedVariantId}
-                      onChange={(event) => setSelectedVariantId(event.target.value)}
-                      className={`${inputClass} mt-2`}
-                    >
-                      <option value="">Choose a size</option>
-                      {product?.variants.map((variant) => (
-                        <option key={variant.id} value={variant.id}>
-                          {variant.name}{variant.description ? ` — ${variant.description}` : ""}
-                        </option>
-                      ))}
-                    </select>
-                    {selectedVariant && (
-                      <span className="mt-2 block font-normal normal-case tracking-normal text-araina-black/55">
-                        Selected: {selectedVariant.name}
-                      </span>
-                    )}
-                  </label>
-
                   <fieldset className="mt-6">
                     <legend className="mb-3 text-xs font-semibold uppercase tracking-wider text-araina-black/75">
-                      Quantity · boxes <span className="text-araina-pink">*</span>
+                      Quantity · Maga Boxes <span className="text-araina-pink">*</span>
                     </legend>
-                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
                       {product?.quantities.map((tier) => (
                         <button
                           type="button"
                           key={tier.boxes}
                           onClick={() => setSelectedBoxes(String(tier.boxes))}
-                          className={`rounded-xl border-2 p-4 text-left transition ${
+                          className={`min-w-0 rounded-xl border-2 p-3 text-left transition sm:p-4 ${
                             Number(selectedBoxes) === tier.boxes
                               ? "border-araina-pink bg-araina-pink/[0.04] shadow-md shadow-araina-pink/5"
                               : "border-araina-pink/10 hover:border-araina-pink/40"
                           }`}
                         >
-                          <span className="block text-2xl font-bold text-araina-black">
-                            {tier.boxes}
+                          <span className="block text-lg font-bold text-araina-black sm:text-2xl">
+                            {tier.boxes} Maga {tier.boxes === 1 ? "Box" : "Boxes"}
                           </span>
-                          <span className="text-xs text-araina-black/55">boxes</span>
-                          <span className="mt-3 block font-semibold text-araina-pink">
-                            {formatCurrency(tier.pricePerBox)}
-                            <span className="font-normal text-araina-black/50"> / box</span>
+                          <span className="mt-3 block text-[10px] text-araina-black/50 line-through">
+                            MRP {formatCurrency(tier.mrp)}
+                          </span>
+                          <span className="mt-1 block text-[10px] text-araina-black/65">
+                            Discount {formatCurrency(tier.discount)}
+                          </span>
+                          <span className="mt-1 block text-[10px] text-green-700">
+                            Discount % {tier.discountPercentage.toFixed(2)}
+                          </span>
+                          <span className="mt-2 block text-sm font-bold text-araina-pink sm:text-base">
+                            {formatCurrency(tier.executiveRate)}
                           </span>
                         </button>
                       ))}
@@ -505,6 +659,45 @@ const OrdersPage = () => {
                     </div>
                   </div>
 
+                  <fieldset className="mt-6">
+                    <legend className="mb-3 text-xs font-semibold uppercase tracking-wider text-araina-black/75">
+                      Delivery method
+                    </legend>
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                      {[
+                        ["hand", "By Hand"],
+                        ["courier", "Courier"],
+                      ].map(([method, label]) => (
+                        <label
+                          key={method}
+                          className={`flex cursor-pointer gap-3 rounded-xl border-2 p-4 transition ${
+                            deliveryMethod === method
+                              ? "border-araina-pink bg-araina-pink/[0.035]"
+                              : "border-araina-pink/10 hover:border-araina-pink/35"
+                          }`}
+                        >
+                          <input
+                            type="radio"
+                            name="deliveryMethod"
+                            value={method}
+                            checked={deliveryMethod === method}
+                            onChange={() => {
+                              setDeliveryMethod(method);
+                              setFieldErrors({});
+                              setError("");
+                            }}
+                            className="mt-1 accent-araina-pink"
+                          />
+                          <span className="text-sm font-semibold text-araina-black">
+                            {label}
+                          </span>
+                        </label>
+                      ))}
+                    </div>
+                  </fieldset>
+
+                  {deliveryMethod === "courier" && (
+                    <>
                   <fieldset className="mt-6">
                     <legend className="mb-3 text-xs font-semibold uppercase tracking-wider text-araina-black/75">
                       Who is this order for?
@@ -611,6 +804,8 @@ const OrdersPage = () => {
                       </div>
                     </div>
                   )}
+                    </>
+                  )}
                 </section>
 
                 <section className="rounded-2xl border border-araina-pink/15 bg-gradient-to-br from-araina-pink/[0.04] to-araina-blue/[0.04] p-5 sm:p-7">
@@ -624,12 +819,8 @@ const OrdersPage = () => {
                         <span className="text-right font-medium">{product?.name || "—"}</span>
                       </p>
                       <p className="flex justify-between gap-4">
-                        <span className="text-araina-black/60">Size / variant</span>
-                        <span className="text-right font-medium">{selectedVariant?.name || "Select a size"}</span>
-                      </p>
-                      <p className="flex justify-between gap-4">
                         <span className="text-araina-black/60">Quantity</span>
-                        <span className="text-right font-medium">{selectedTier ? `${selectedTier.boxes} boxes` : "Select quantity"}</span>
+                        <span className="text-right font-medium">{selectedTier ? `${selectedTier.boxes} Maga ${selectedTier.boxes === 1 ? "Box" : "Boxes"}` : "Select quantity"}</span>
                       </p>
                     </div>
                     <div className="rounded-xl border border-araina-pink/10 bg-white/80 p-4">
@@ -654,6 +845,19 @@ const OrdersPage = () => {
                     </div>
                   </div>
                   <div className="mt-5 space-y-3 border-t border-araina-pink/15 pt-4">
+                    {deliveryMethod === "courier" && (
+                      <div
+                        role="note"
+                        className="rounded-xl border border-araina-blue/20 bg-araina-blue/[0.05] p-3 text-xs leading-5 text-araina-black/75"
+                      >
+                        <p className="font-semibold text-araina-blue">Additional courier charges</p>
+                        <p className="mt-1">
+                          Pay the courier charges directly to the courier upon
+                          delivery. These charges are not included in the order
+                          total.
+                        </p>
+                      </div>
+                    )}
                     {coupons.length > 0 && (
                       <label className="block text-xs font-semibold text-araina-black/75">
                         Apply a coupon
@@ -673,9 +877,25 @@ const OrdersPage = () => {
                         </select>
                       </label>
                     )}
+                    {paymentConfig.enabled && (
+                      <label className="block text-xs font-semibold text-araina-black/75">
+                        Email for payment receipt
+                        <span className="ml-1 text-araina-pink">*</span>
+                        <input
+                          className={`${inputClass} mt-2`}
+                          type="email"
+                          name="paymentEmail"
+                          value={paymentEmail}
+                          onChange={(event) => setPaymentEmail(event.target.value)}
+                          autoComplete="email"
+                          maxLength={255}
+                          required
+                        />
+                      </label>
+                    )}
                     <p className="flex justify-between text-sm">
                       <span className="text-araina-black/60">
-                        Subtotal ({selectedTier?.boxes || 0} × {formatCurrency(selectedTier?.pricePerBox || 0)} per box)
+                        Subtotal ({selectedTier?.boxes || 0} × {formatCurrency(selectedTier?.pricePerBox || 0)} per Maga Box)
                       </span>
                       <span className="font-semibold">{formatCurrency(subtotal)}</span>
                     </p>
@@ -690,7 +910,9 @@ const OrdersPage = () => {
                       <span className="text-xl font-bold text-araina-pink">{formatCurrency(total)}</span>
                     </p>
                     <p className="text-xs text-araina-black/50">
-                      Payment is not configured yet. The coupon is redeemed when payment is confirmed.
+                      {paymentConfig.enabled
+                        ? "You’ll complete payment securely on PayU. Your coupon is redeemed after PayU confirms payment."
+                        : "Payment is not configured yet. The coupon is redeemed when payment is confirmed."}
                     </p>
                   </div>
                 </section>
@@ -709,7 +931,9 @@ const OrdersPage = () => {
                         {formatCurrency(total)}
                       </p>
                       <p className="mt-0.5 text-[11px] text-araina-black/50">
-                        Payment is not collected online
+                        {paymentConfig.enabled
+                          ? "Secure online payment with PayU"
+                          : "Payment is not collected online"}
                       </p>
                     </div>
                     <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-araina-pink/10 text-araina-pink sm:hidden">
@@ -720,8 +944,7 @@ const OrdersPage = () => {
                     type="submit"
                     disabled={
                       isSubmitting ||
-                      !selectedVariantId ||
-                      !selectedTier ||
+                        !selectedTier ||
                       !catalog.length
                     }
                     className="group inline-flex min-h-14 w-full items-center justify-center gap-3 rounded-xl bg-gradient-to-r from-araina-pink to-[#e94f70] px-6 text-sm font-semibold uppercase tracking-[0.12em] text-white shadow-lg shadow-araina-pink/25 transition duration-200 hover:-translate-y-0.5 hover:shadow-xl hover:shadow-araina-pink/30 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-araina-pink/25 disabled:cursor-not-allowed disabled:translate-y-0 disabled:from-araina-pink/50 disabled:to-araina-pink/50 disabled:shadow-none sm:w-auto sm:min-w-64"
@@ -729,12 +952,12 @@ const OrdersPage = () => {
                     {isSubmitting ? (
                       <>
                         <LoaderCircle size={19} className="animate-spin" />
-                        Placing order…
+                        {paymentConfig.enabled ? "Starting secure payment…" : "Placing order…"}
                       </>
                     ) : (
                       <>
                         <ShoppingBag size={18} />
-                        Place order
+                        {paymentConfig.enabled ? "Continue to payment" : "Place order"}
                         <ArrowRight
                           size={18}
                           className="transition-transform group-hover:translate-x-1"
@@ -748,6 +971,118 @@ const OrdersPage = () => {
           </form>
         ) : (
           <section className="mt-6 space-y-5">
+            {paymentFeedback && (
+              <div
+                role="status"
+                className={`rounded-xl border p-4 text-sm ${
+                  receiptOrder
+                    ? "border-green-200 bg-green-50 text-green-800"
+                    : "border-amber-200 bg-amber-50 text-amber-900"
+                }`}
+              >
+                {paymentFeedback}
+                {paymentFailed && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setActiveTab("place-order");
+                      setPaymentFeedback("");
+                      setPaymentFailed(false);
+                    }}
+                    className="ml-2 font-semibold underline"
+                  >
+                    Try again
+                  </button>
+                )}
+              </div>
+            )}
+
+            {receiptOrder && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center bg-araina-black/50 p-4">
+                <section
+                  role="dialog"
+                  aria-modal="true"
+                  aria-labelledby="payment-receipt-title"
+                  className="max-h-[90vh] w-full max-w-xl overflow-y-auto rounded-2xl bg-white p-6 shadow-2xl sm:p-8"
+                >
+                  <div className="flex items-start justify-between gap-4">
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-widest text-araina-pink">
+                        Payment confirmed
+                      </p>
+                      <h2
+                        id="payment-receipt-title"
+                        className="mt-2 text-2xl font-bold text-araina-black"
+                      >
+                        Your receipt
+                      </h2>
+                      <p className="mt-1 text-sm text-araina-black/60">
+                        Order #{receiptOrder.orderNumber}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setReceiptOrder(null)}
+                      className="rounded-lg px-3 py-2 text-sm font-semibold text-araina-black/60 hover:bg-araina-pink/5"
+                      aria-label="Close receipt"
+                    >
+                      Close
+                    </button>
+                  </div>
+                  <div className="mt-6 space-y-3 border-y border-araina-pink/10 py-5 text-sm">
+                    {receiptOrder.items?.map((item, index) => (
+                      <div
+                        key={`${item.product}-${index}`}
+                        className="flex justify-between gap-4"
+                      >
+                        <span>
+                          {item.product} · {item.boxes} Maga{" "}
+                          {item.boxes === 1 ? "Box" : "Boxes"}
+                        </span>
+                        <strong>{formatCurrency(item.subtotal)}</strong>
+                      </div>
+                    ))}
+                    <div className="flex justify-between text-araina-black/60">
+                      <span>Subtotal</span>
+                      <span>{formatCurrency(receiptOrder.subtotal)}</span>
+                    </div>
+                    {receiptOrder.discount > 0 && (
+                      <div className="flex justify-between text-green-700">
+                        <span>Coupon discount</span>
+                        <span>−{formatCurrency(receiptOrder.discount)}</span>
+                      </div>
+                    )}
+                    <div className="flex justify-between border-t border-araina-pink/10 pt-3 text-base font-bold">
+                      <span>Paid</span>
+                      <span className="text-araina-pink">
+                        {formatCurrency(receiptOrder.total)}
+                      </span>
+                    </div>
+                    <p className="text-xs text-araina-black/60">
+                      Payment method: {receiptOrder.payment?.provider === "payu" ? "PayU" : receiptOrder.payment?.provider || "Online"}
+                    </p>
+                    {receiptOrder.payment?.transactionId && (
+                      <p className="break-all text-xs text-araina-black/60">
+                        Payment reference: {receiptOrder.payment.transactionId}
+                      </p>
+                    )}
+                    {receiptOrder.payment?.paidAt && (
+                      <p className="text-xs text-araina-black/60">
+                        Paid on: {formatDateTime(receiptOrder.payment.paidAt)}
+                      </p>
+                    )}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => downloadReceipt(receiptOrder)}
+                    className="mt-5 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg bg-araina-blue px-5 text-xs font-semibold uppercase tracking-wider text-white"
+                  >
+                    <Download size={16} /> Print or download receipt
+                  </button>
+                </section>
+              </div>
+            )}
+
             {placedOrder && (
               <div className="flex flex-col gap-4 rounded-2xl border border-green-200 bg-green-50 p-5 sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex items-center gap-3">
@@ -784,13 +1119,13 @@ const OrdersPage = () => {
                           {formatDateTime(order.createdAt)}
                         </p>
                         <p className="mt-4 font-semibold text-araina-black">
-                          {item?.product} · {item?.variant} · {item?.boxes} boxes
+                          {item?.product} · {item?.boxes} Maga {item?.boxes === 1 ? "Box" : "Boxes"}
                         </p>
                         <div className="mt-3 grid grid-cols-1 gap-x-8 gap-y-2 text-xs text-araina-black/60 sm:grid-cols-2">
                           <p><strong>Ordered by:</strong> {order.orderedByName} · {order.orderedByMobile ? formatPhone(order.orderedByMobile) : ""}</p>
                           <p><strong>Ordered for:</strong> {order.recipient?.name} · {order.recipient?.mobile ? formatPhone(order.recipient.mobile) : ""}</p>
                           <p><strong>Delivery address:</strong> {getAddressLines({ ...order.recipient?.address, country: order.recipient?.country }).join(", ")}</p>
-                          <p><strong>Status:</strong> {order.orderStatus} · Payment not configured</p>
+                          <p><strong>Status:</strong> {order.orderStatus} · {getPaymentStatusLabel(order.paymentStatus)}</p>
                         </div>
                       </div>
                       <div className="flex items-center justify-between gap-4 sm:flex-col sm:items-end">

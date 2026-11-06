@@ -2,6 +2,8 @@ import React, { useEffect, useState } from "react";
 import { Gift, LoaderCircle } from "lucide-react";
 import PortalLayout from "../../components/PortalLayout/PortalLayout";
 import { formatCurrency, formatDate } from "../../utils/formatters";
+import { getPortalErrorMessage } from "../../utils/errorMessages";
+import { requestPortalJson } from "../../utils/portalApi";
 
 const CouponsPage = () => {
   const [coupons, setCoupons] = useState([]);
@@ -11,16 +13,18 @@ const CouponsPage = () => {
   useEffect(() => {
     const loadCoupons = async () => {
       try {
-        const response = await fetch("/api/orders/coupons", {
-          credentials: "include",
-        });
-        const result = await response.json();
-        if (!response.ok) {
-          throw new Error(result.error?.message || "Unable to load coupons.");
+        const availableCoupons = await requestPortalJson("/api/orders/coupons");
+        if (!Array.isArray(availableCoupons)) {
+          throw new Error("We couldn’t load your coupons. Please refresh and try again.");
         }
-        setCoupons(result.data);
+        setCoupons(availableCoupons);
       } catch (loadError) {
-        setError(loadError.message);
+        setError(
+          getPortalErrorMessage(
+            loadError,
+            "We couldn’t load your coupons. Please refresh and try again.",
+          ),
+        );
       } finally {
         setIsLoading(false);
       }

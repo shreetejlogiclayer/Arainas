@@ -5,4 +5,8 @@
 **/.env
 **/.env.*
 !**/.env.example
+
+# Install dependencies during development or deployment; never commit them.
+node_modules/
+**/node_modules/
 /server/uploads/

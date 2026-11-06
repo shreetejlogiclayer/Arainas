@@ -2,10 +2,11 @@ import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import AuthCard from "../../components/AuthCard/AuthCard";
 import {
-  isValidEmail,
   isValidIndianPhone,
   validatePassword,
 } from "../../utils/formatters";
+import { getPortalErrorMessage } from "../../utils/errorMessages";
+import { requestPortalJson } from "../../utils/portalApi";
 
 /**
  * Register Page
@@ -14,9 +15,7 @@ import {
 const RegisterPage = () => {
   const navigate = useNavigate();
 
-  const [email, setEmail] = useState("");
   const [mobile, setMobile] = useState("");
-  const [referredByCode, setReferredByCode] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -27,10 +26,6 @@ const RegisterPage = () => {
 
   const validateForm = () => {
     const newErrors = {};
-
-    if (email.trim() && !isValidEmail(email)) {
-      newErrors.email = "Please enter a valid email";
-    }
 
     if (!mobile.trim()) {
       newErrors.mobile = "Mobile number is required";
@@ -66,38 +61,27 @@ const RegisterPage = () => {
     setIsLoading(true);
 
     try {
-      const response = await fetch("/api/auth/register", {
+      const user = await requestPortalJson("/api/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        credentials: "include",
         body: JSON.stringify({
-          email: email.trim() || null,
           mobile,
           password,
           confirmPassword,
-          referredByCode: referredByCode.trim(),
         }),
       });
-      const result = await response.json();
-
-      if (!response.ok) {
-        setApiError(
-          result.error?.message || "Unable to create account. Please try again.",
-        );
-        return;
-      }
 
       localStorage.setItem("authToken", "session");
-      localStorage.setItem("userMobile", result.data.mobile || mobile);
-      if (result.data.email) {
-        localStorage.setItem("userEmail", result.data.email);
-      } else {
-        localStorage.removeItem("userEmail");
-      }
+      localStorage.setItem("userMobile", user.mobile || mobile);
+      localStorage.removeItem("userEmail");
       navigate("/portal/create-profile");
     } catch (err) {
-      setApiError("Unable to create account. Please try again later.");
-      console.error("Register error:", err);
+      setApiError(
+        getPortalErrorMessage(
+          err,
+          "We couldn’t create your account. Please check your details and try again.",
+        ),
+      );
     } finally {
       setIsLoading(false);
     }
@@ -115,31 +99,6 @@ const RegisterPage = () => {
             <p className="text-sm text-red-700">{apiError}</p>
           </div>
         )}
-
-        {/* Email Field */}
-        <div>
-          <label className="block text-xs uppercase font-semibold text-araina-black mb-2 tracking-widest">
-            Email (optional)
-          </label>
-          <input
-            type="email"
-            value={email}
-            onChange={(e) => {
-              setEmail(e.target.value);
-              if (errors.email) setErrors({ ...errors, email: "" });
-            }}
-            placeholder="you@example.com"
-            className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-araina-pink/50 transition-all text-sm ${
-              errors.email
-                ? "border-red-300 bg-red-50"
-                : "border-araina-pink/20"
-            }`}
-            disabled={isLoading}
-          />
-          {errors.email && (
-            <p className="text-xs text-red-600 mt-1">{errors.email}</p>
-          )}
-        </div>
 
         {/* Mobile Field */}
         <div>
@@ -164,21 +123,6 @@ const RegisterPage = () => {
           {errors.mobile && (
             <p className="text-xs text-red-600 mt-1">{errors.mobile}</p>
           )}
-        </div>
-
-        <div>
-          <label className="block text-xs uppercase font-semibold text-araina-black mb-2 tracking-widest">
-            Referral Code (optional)
-          </label>
-          <input
-            type="text"
-            value={referredByCode}
-            onChange={(e) => setReferredByCode(e.target.value.toUpperCase())}
-            placeholder="Enter a friend's referral code"
-            maxLength={50}
-            className="w-full px-4 py-3 border border-araina-pink/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-araina-pink/50 transition-all text-sm"
-            disabled={isLoading}
-          />
         </div>
 
         {/* Password Field */}

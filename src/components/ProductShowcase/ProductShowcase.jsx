@@ -41,16 +41,14 @@ const ProductShowcase = () => {
               whileInView={{ opacity: 1, x: 0 }}
               viewport={{ once: true, margin: "-100px" }}
               transition={{ duration: 1 }}
-              className="relative w-full max-w-[400px] aspect-square flex items-center justify-center bg-gradient-to-br from-araina-pink/5 to-araina-blue/5 rounded-3xl p-8 border border-araina-pink/10 shadow-sm"
+              className="relative w-full max-w-[500px] overflow-hidden rounded-[2rem_5rem_2rem_5rem] border border-araina-pink/10 bg-white shadow-xl"
             >
-              <div className="absolute inset-0 bg-white/50 backdrop-blur-sm rounded-3xl -z-10" />
-
               <motion.img
-                whileHover={{ scale: 1.05 }}
+                whileHover={{ scale: 1.02 }}
                 transition={{ type: "spring", stiffness: 300, damping: 20 }}
-                src="/assets/product/araina-product-placeholder.png"
-                alt="Araina pad package showcasing elegant details"
-                className="max-h-[90%] w-auto object-contain rounded-2xl shadow-lg border border-araina-pink/5"
+                src="/assets/images/campaign/woman-product.jpg"
+                alt="Woman holding an Araina sanitary pad package"
+                className="block aspect-[3/2] w-full object-cover object-center"
               />
             </motion.div>
           </div>

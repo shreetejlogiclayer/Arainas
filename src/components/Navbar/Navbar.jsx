@@ -11,9 +11,12 @@ const Navbar = ({ activeSection, setActiveSection }) => {
 
   const menuItems = [
     { name: "Home", id: "home", path: "/" },
-    { name: "About", id: "about", path: "/about" },
-    { name: "Why Araina", id: "why-araina", path: "/why-us" },
-    { name: "Our Product", id: "product", path: "/products" },
+    { name: "About Us", id: "about", path: "/about" },
+    { name: "Araina", id: "araina", path: "/araina" },
+    { name: "Product", id: "product", path: "/products" },
+    { name: "Women’s Health", id: "womens-health", path: "/womens-health" },
+    { name: "Opportunity", id: "opportunity", path: "/opportunity" },
+    { name: "Media", id: "media", path: "/media" },
     { name: "Contact", id: "contact", path: "/contact" },
   ];
 
@@ -109,33 +112,13 @@ const Navbar = ({ activeSection, setActiveSection }) => {
 
   // ==================== DETERMINE ACTIVE ITEM ====================
   const isItemActive = (item) => {
-    if (location.pathname === "/about" && item.id === "about") {
-      return true;
+    if (item.path === "/") {
+      return (
+        location.pathname === "/" &&
+        (!activeSection || activeSection === "home")
+      );
     }
-
-    if (location.pathname === "/products" && item.id === "product") {
-      return true;
-    }
-
-    if (location.pathname === "/why-us" && item.id === "why-araina") {
-      return true;
-    }
-
-    if (location.pathname === "/contact" && item.id === "contact") {
-      return true;
-    }
-
-    if (location.pathname === "/") {
-      if (activeSection === item.id) {
-        return true;
-      }
-
-      if (item.id === "home" && (!activeSection || activeSection === "home")) {
-        return true;
-      }
-    }
-
-    return false;
+    return location.pathname === item.path;
   };
 
   // ==================== JOIN US BUTTON ====================
@@ -205,11 +188,11 @@ const Navbar = ({ activeSection, setActiveSection }) => {
       <header
         className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
           isScrolled
-            ? "bg-araina-white/95 backdrop-blur-md py-1.5 shadow-sm border-b border-araina-pink/10"
-            : "bg-transparent py-2"
+            ? "bg-araina-white/95 backdrop-blur-md py-2 shadow-sm border-b border-araina-pink/10"
+            : "bg-transparent py-3"
         }`}
       >
-        <div className="max-w-7xl mx-auto px-5 sm:px-6 lg:px-8 flex items-center justify-between">
+        <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 flex items-center justify-between">
           {/* ==================== LOGO ==================== */}
           <Link
             to="/"
@@ -221,7 +204,7 @@ const Navbar = ({ activeSection, setActiveSection }) => {
                 });
               }
             }}
-            className="flex items-center flex-shrink-0 group"
+            className="mr-1 flex min-w-0 flex-shrink items-center py-1.5 pr-1 group xl:mr-5"
             aria-label="ARAINA Home"
           >
             <img
@@ -231,13 +214,13 @@ const Navbar = ({ activeSection, setActiveSection }) => {
                 w-auto object-contain
                 transition-all duration-300
                 group-hover:scale-[1.03]
-                ${isScrolled ? "h-14 sm:h-16" : "h-20 sm:h-22 lg:h-24"}
+                ${isScrolled ? "h-12 sm:h-16" : "h-12 sm:h-16 lg:h-20"}
               `}
             />
           </Link>
 
           {/* ==================== DESKTOP NAVIGATION ==================== */}
-          <nav className="hidden lg:flex items-center gap-6 xl:gap-8">
+          <nav className="hidden xl:flex flex-1 items-center justify-center gap-5 2xl:gap-7">
             {menuItems.map((item) => {
               const active = isItemActive(item);
 
@@ -245,7 +228,7 @@ const Navbar = ({ activeSection, setActiveSection }) => {
                 <button
                   key={item.id}
                   onClick={() => handleNavClick(item)}
-                  className={`text-xs uppercase tracking-widest font-medium transition-all duration-300 relative py-2 whitespace-nowrap ${
+                  className={`text-xs uppercase tracking-[0.08em] font-semibold transition-all duration-300 relative py-2 whitespace-nowrap ${
                     active
                       ? "text-araina-pink"
                       : "text-araina-black/75 hover:text-araina-pink"
@@ -264,7 +247,7 @@ const Navbar = ({ activeSection, setActiveSection }) => {
           </nav>
 
           {/* ==================== DESKTOP JOIN CTA ==================== */}
-          <div className="hidden lg:block flex-shrink-0">
+          {/* <div className="hidden xl:block flex-shrink-0">
             <button
               onClick={handleJoinUsClick}
               className="
@@ -276,8 +259,8 @@ const Navbar = ({ activeSection, setActiveSection }) => {
                 uppercase
                 tracking-widest
                 font-semibold
-                px-6
-                py-3
+                px-5
+                py-2.5
                 rounded-full
                 transition-all
                 duration-300
@@ -286,14 +269,22 @@ const Navbar = ({ activeSection, setActiveSection }) => {
                 shadow-araina-pink/20
               "
             >
-              Join Us
+              Become a Member
             </button>
-          </div>
+          </div> */}
+
+          {/* ==================== MOBILE JOIN CTA ==================== */}
+          {/* <button
+            onClick={handleJoinUsClick}
+            className="araina-heartbeat xl:hidden mr-1 whitespace-nowrap rounded-full bg-araina-pink px-3 py-2 text-[10px] font-semibold uppercase tracking-wide text-araina-white shadow-md shadow-araina-pink/20 transition-all duration-300 hover:bg-araina-pink/90 hover:shadow-lg sm:px-4 sm:text-xs"
+          >
+            Become a Member
+          </button> */}
 
           {/* ==================== MOBILE MENU TOGGLE ==================== */}
           <button
             onClick={() => setIsOpen(!isOpen)}
-            className="lg:hidden text-araina-black hover:text-araina-pink transition-colors p-2 flex-shrink-0"
+            className="xl:hidden flex-shrink-0 p-1.5 text-araina-black transition-colors hover:text-araina-pink sm:p-2"
             aria-label="Toggle Menu"
             aria-expanded={isOpen}
           >
@@ -304,7 +295,7 @@ const Navbar = ({ activeSection, setActiveSection }) => {
 
       {/* ==================== MOBILE DRAWER ==================== */}
       <div
-        className={`fixed inset-0 z-40 bg-araina-white transition-all duration-500 lg:hidden flex flex-col justify-center px-8 ${
+        className={`fixed inset-0 z-40 bg-araina-white transition-all duration-500 xl:hidden flex flex-col justify-center px-8 ${
           isOpen
             ? "opacity-100 pointer-events-auto translate-x-0"
             : "opacity-0 pointer-events-none translate-x-full"
@@ -335,37 +326,6 @@ const Navbar = ({ activeSection, setActiveSection }) => {
               </button>
             );
           })}
-
-          {/* ==================== MOBILE JOIN CTA ==================== */}
-          <div
-            className={`mt-8 ${
-              isOpen ? "translate-y-0 opacity-100" : "translate-y-4 opacity-0"
-            } transition-all duration-500 delay-300`}
-          >
-            <button
-              onClick={handleJoinUsClick}
-              className="
-                araina-heartbeat
-                bg-araina-pink
-                hover:bg-araina-pink/90
-                text-araina-white
-                text-xs
-                uppercase
-                tracking-widest
-                font-semibold
-                px-10
-                py-4
-                rounded-full
-                transition-all
-                duration-300
-                shadow-md
-                hover:shadow-lg
-                shadow-araina-pink/20
-              "
-            >
-              Join Us
-            </button>
-          </div>
         </div>
       </div>
     </>

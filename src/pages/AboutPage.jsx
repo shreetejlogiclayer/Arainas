@@ -1,8 +1,17 @@
 import React, { useEffect } from "react";
 import { motion } from "framer-motion";
-import { Sparkles, ArrowRight, CheckCircle } from "lucide-react";
+import {
+  ArrowRight,
+  BriefcaseBusiness,
+  CheckCircle,
+  Eye,
+  Factory,
+  HandHeart,
+  ShieldCheck,
+  Sparkles,
+  Target,
+} from "lucide-react";
 import { Link } from "react-router-dom";
-import { COMPANY_INFO } from "../config/siteConfig";
 
 const AboutPage = () => {
   useEffect(() => {
@@ -66,22 +75,22 @@ const AboutPage = () => {
     {
       title: "Quality Manufacturing",
       desc: "Crafted with clean, touch-free manufacturing methods ensuring safe, skin-friendly feminine hygiene.",
-      image: "/assets/images/Quality_Management-removebg-preview.png",
+      icon: Factory,
     },
     {
       title: "Dignity & Respect",
       desc: "Normalizing conversations around menstrual health with dignity and zero fear-based marketing.",
-      image: "/assets/images/Our_Values-removebg-preview.png",
+      icon: HandHeart,
     },
     {
       title: "Entrepreneurial Pathways",
       desc: "Creating accessible, step-by-step learning and income opportunities for women at all stages of life.",
-      image: "/assets/images/Meaningful_opportunity-removebg-preview.png",
+      icon: BriefcaseBusiness,
     },
     {
       title: "Long-term Impact",
       desc: "Building a sustainable platform that lifts individuals, households, and entire communities.",
-      image: "/assets/images/Our_Commitment-removebg-preview.png",
+      icon: ShieldCheck,
     },
   ];
 
@@ -110,9 +119,9 @@ const AboutPage = () => {
                 transition={{ duration: 0.8, delay: 0.1 }}
                 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight leading-[1.15] mb-6"
               >
-                Where Health Meets <br />
+                More Than a Company.<br />
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-araina-pink to-araina-blue">
-                  Empowerment & Opportunity.
+                  A Purpose in Motion.
                 </span>
               </motion.h1>
 
@@ -122,10 +131,13 @@ const AboutPage = () => {
                 transition={{ duration: 0.8, delay: 0.2 }}
                 className="text-sm sm:text-base text-araina-black/75 font-light leading-relaxed mb-8 max-w-2xl"
               >
-                {COMPANY_INFO.detailedDescription} We are building more than a
-                business. We are building a platform where care meets
-                opportunity, knowledge meets confidence, and women can move
-                forward with purpose.
+                At Royo Essentials LLP, we believe that a business becomes
+                truly meaningful when it creates value beyond its products. We
+                are a purpose-driven health, wellness, and personal-care company
+                focused on bringing together women&apos;s health, menstrual
+                wellness, education, entrepreneurship, and empowerment. We are
+                building a platform where care meets opportunity, knowledge
+                meets confidence, and women can move forward with purpose.
               </motion.p>
 
               <motion.div
@@ -149,18 +161,17 @@ const AboutPage = () => {
               </motion.div>
             </div>
 
-            {/* AI Generated Banner Image */}
             <div className="lg:col-span-5">
               <motion.div
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ duration: 0.8, delay: 0.3 }}
-                className="relative rounded-3xl overflow-hidden border border-araina-pink/15 shadow-xl group"
+                className="relative overflow-hidden rounded-t-[50%] rounded-b-3xl border border-araina-pink/15 shadow-xl group"
               >
                 <img
-                  src="/assets/images/About_Page_Image-removebg-preview.png"
-                  alt="Women rising together through health and opportunity"
-                  className="w-full h-auto object-cover transform group-hover:scale-105 transition-transform duration-700"
+                  src="/assets/images/campaign/womens-health-yellow.jpg"
+                  alt="Woman holding an Araina sanitary pad"
+                  className="aspect-[4/5] max-h-[560px] w-full object-cover object-[center_35%] transform group-hover:scale-105 transition-transform duration-700"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-araina-black/60 via-transparent to-transparent opacity-80" />
                 <div className="absolute bottom-6 left-6 right-6 text-white">
@@ -276,12 +287,8 @@ const AboutPage = () => {
             {/* Mission Card */}
             <div className="bg-araina-white border border-araina-pink/15 rounded-3xl p-8 sm:p-10 shadow-sm relative flex flex-col justify-between">
               <div>
-                <div className="mb-6 h-40">
-                  <img
-                    src="/assets/images/Misson-removebg-preview.png"
-                    alt=""
-                    className="h-40 w-40 object-contain"
-                  />
+                <div className="mb-6 inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-araina-pink/10 text-araina-pink">
+                  <Target size={27} strokeWidth={1.8} />
                 </div>
                 <span className="text-[10px] uppercase font-bold tracking-[0.25em] text-araina-pink block mb-2">
                   What We Do
@@ -327,12 +334,8 @@ const AboutPage = () => {
             {/* Vision Card */}
             <div className="bg-araina-white border border-araina-blue/15 rounded-3xl p-8 sm:p-10 shadow-sm relative flex flex-col justify-between">
               <div>
-                <div className="mb-6 h-40">
-                  <img
-                    src="/assets/images/Vision-removebg-preview.png"
-                    alt=""
-                    className="h-32 w-32 object-contain"
-                  />
+                <div className="mb-6 inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-araina-blue/10 text-araina-blue">
+                  <Eye size={27} strokeWidth={1.8} />
                 </div>
                 <span className="text-[10px] uppercase font-bold tracking-[0.25em] text-araina-blue block mb-2">
                   Where We Are Heading
@@ -419,16 +422,16 @@ const AboutPage = () => {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-            {commitments.map((item, idx) => (
+            {commitments.map((item, idx) => {
+              const Icon = item.icon;
+              return (
               <div
                 key={idx}
-                className="bg-araina-white border border-araina-pink/10 rounded-2xl p-6 shadow-sm"
+                className="rounded-2xl border border-araina-pink/10 bg-white/80 p-6 shadow-sm transition hover:-translate-y-1 hover:border-araina-pink/25 hover:shadow-lg"
               >
-                <img
-                  src={item.image}
-                  alt=""
-                  className="mx-auto mb-4 block h-36 w-36 object-contain"
-                />
+                <div className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-araina-pink/10 text-araina-pink">
+                  <Icon size={22} strokeWidth={1.8} />
+                </div>
                 <h4 className="text-base font-bold mb-2 text-araina-black">
                   {item.title}
                 </h4>
@@ -436,7 +439,116 @@ const AboutPage = () => {
                   {item.desc}
                 </p>
               </div>
-            ))}
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
+      <section className="py-20 bg-gradient-to-b from-araina-white via-araina-blue/5 to-araina-pink/5 border-t border-araina-pink/10">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="grid gap-12 lg:grid-cols-12">
+            <div className="lg:col-span-5">
+              <span className="text-[10px] uppercase font-bold tracking-[0.3em] text-araina-blue block mb-4">
+                What We Do
+              </span>
+              <h2 className="text-3xl sm:text-4xl font-bold tracking-tight mb-5">
+                Products, knowledge, and opportunity—connected.
+              </h2>
+              <p className="text-sm text-araina-black/70 font-light leading-relaxed">
+                Royo Essentials LLP operates across sales, marketing, and
+                training, with a focus on women&apos;s health, wellness, and
+                opportunity. Through Araina, we provide feminine hygiene
+                products while encouraging greater awareness around menstrual
+                wellness and responsible menstrual care.
+              </p>
+            </div>
+            <div className="grid gap-4 sm:grid-cols-3 lg:col-span-7">
+              {[
+                ["Products for her health", "Thoughtfully positioned feminine-care products designed around women’s needs."],
+                ["Knowledge for her awareness", "Encouraging women to understand menstrual wellness and make informed choices."],
+                ["Opportunities for her growth", "A pathway for women to learn, build skills, explore entrepreneurship, and work towards greater financial independence."],
+              ].map(([title, description], idx) => (
+                <article key={title} className="rounded-2xl border border-araina-pink/10 bg-white p-5 shadow-sm">
+                  <span className="text-xs font-bold tracking-widest text-araina-pink">0{idx + 1}</span>
+                  <h3 className="mt-4 text-sm font-bold text-araina-black">{title}</h3>
+                  <p className="mt-2 text-xs leading-6 text-araina-black/65">{description}</p>
+                </article>
+              ))}
+            </div>
+          </div>
+
+          <div className="mt-16 grid gap-6 lg:grid-cols-2">
+            <article className="rounded-3xl border border-araina-blue/15 bg-white/90 p-7 sm:p-9">
+              <span className="text-[10px] uppercase font-bold tracking-[0.25em] text-araina-blue">
+                Our Philosophy · Empowering To Rise
+              </span>
+              <h3 className="mt-3 text-2xl font-bold text-araina-black">
+                Every woman has the potential to create something meaningful.
+              </h3>
+              <p className="mt-4 text-sm font-light leading-7 text-araina-black/70">
+                Some women may already be taking steps towards their dreams.
+                Others may simply need the right opportunity, encouragement,
+                knowledge, or support to begin. We want to create an environment
+                where women can learn, take action, build confidence, grow,
+                support one another, and rise.
+              </p>
+              <p className="mt-4 text-sm font-semibold text-araina-pink">
+                When one woman rises, she should not have to rise alone.
+              </p>
+            </article>
+            <article className="rounded-3xl border border-araina-pink/15 bg-gradient-to-br from-araina-pink/[0.06] via-white to-araina-blue/[0.08] p-7 sm:p-9">
+              <span className="text-[10px] uppercase font-bold tracking-[0.25em] text-araina-pink">
+                Our Long-Term Direction
+              </span>
+              <h3 className="mt-3 text-2xl font-bold leading-snug text-araina-black">
+                We don’t want to simply grow bigger. We want to grow deeper,
+                stronger, and more meaningful.
+              </h3>
+              <p className="mt-4 text-sm font-light leading-7 text-araina-black/70">
+                Our ambition is to build Royo Essentials LLP into a trusted
+                organization with a meaningful presence in women&apos;s wellness
+                and empowerment. We want our journey to extend beyond products
+                and transactions—to knowledge, relationships, opportunities,
+                community, and social impact.
+              </p>
+              <p className="mt-4 text-sm font-medium text-araina-blue">
+                Our future is not only about how far we can go. It is about how
+                many women we can encourage to move forward with us.
+              </p>
+            </article>
+          </div>
+
+          <div className="mt-6 rounded-3xl border border-araina-pink/15 bg-white p-7 sm:p-9">
+            <div className="grid gap-8 md:grid-cols-2">
+              <div>
+                <span className="text-[10px] uppercase font-bold tracking-[0.25em] text-araina-blue">
+                  Our Promise
+                </span>
+                <p className="mt-3 text-sm font-light leading-7 text-araina-black/70">
+                  Trust is built through consistency, responsibility,
+                  transparency, quality, meaningful relationships, and the
+                  willingness to keep improving. We aspire to be a company women
+                  can feel proud to be associated with, a brand that respects
+                  the woman behind every product, and a community where women
+                  know they do not have to grow alone.
+                </p>
+              </div>
+              <div>
+                <span className="text-[10px] uppercase font-bold tracking-[0.25em] text-araina-pink">
+                  Our Belief
+                </span>
+                <p className="mt-3 text-sm font-light leading-7 text-araina-black/70">
+                  A woman can care for her family and still have dreams of her
+                  own. She can prioritize her health and still pursue ambitious
+                  goals. She can begin with a small step, build something
+                  meaningful, and reach back to help another woman rise too.
+                </p>
+              </div>
+            </div>
+            <p className="mt-6 border-t border-araina-pink/10 pt-5 text-center text-sm font-semibold text-araina-pink">
+              When one woman rises, she empowers another woman to rise alongside her.
+            </p>
           </div>
         </div>
       </section>

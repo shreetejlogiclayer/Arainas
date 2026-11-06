@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { motion } from "framer-motion";
+import { Heart, ShieldCheck, Sparkles, TrendingUp } from "lucide-react";
 
 const WhyAraina = () => {
   const [hoveredIdx, setHoveredIdx] = useState(null);
@@ -9,25 +10,25 @@ const WhyAraina = () => {
       title: "Comfort",
       description:
         "Thoughtfully positioned menstrual care designed around women's needs, offering premium softness and breathability.",
-      image: "/assets/images/Comfort.png",
+      icon: Heart,
     },
     {
       title: "Hygiene",
       description:
         "A focus on safe, responsible menstrual care with strict quality standards and touch-free manufacturing practices.",
-      image: "/assets/images/Hygiene-removebg-preview.png",
+      icon: ShieldCheck,
     },
     {
       title: "Confidence",
       description:
         "Helping women experience their periods with confidence and comfort, rather than compromise or limitations.",
-      image: "/assets/images/Confidence.png",
+      icon: Sparkles,
     },
     {
       title: "Empowerment",
       description:
         "Connecting women's health with entrepreneurship, learning, and meaningful financial opportunities to rise.",
-      image: "/assets/images/Empowerment-removebg-preview.png",
+      icon: TrendingUp,
     },
   ];
 
@@ -79,28 +80,15 @@ const WhyAraina = () => {
 
                 <div className="relative z-10">
                   {/* Icon Container */}
-                  {pillar.image ? (
-                    <img
-                      src={pillar.image}
-                      alt=""
-                      className={`mx-auto mb-6 block h-40 w-40 object-contain transition-transform duration-500 ${
-                        hoveredIdx === idx ? "rotate-6 scale-110" : ""
-                      }`}
-                    />
-                  ) : (
-                    <div
-                      className={`inline-flex p-4 rounded-xl mb-6 transition-all duration-500 ${
-                        hoveredIdx === idx
-                          ? "bg-araina-pink text-araina-white rotate-6 scale-110"
-                          : "bg-araina-pink/10 text-araina-pink"
-                      }`}
-                    >
-                      <Icon
-                        size={22}
-                        className="transition-transform duration-500"
-                      />
-                    </div>
-                  )}
+                  <div
+                    className={`inline-flex rounded-xl p-4 mb-6 transition-all duration-500 ${
+                      hoveredIdx === idx
+                        ? "bg-araina-pink text-araina-white rotate-6 scale-110"
+                        : "bg-araina-pink/10 text-araina-pink"
+                    }`}
+                  >
+                    <Icon size={22} />
+                  </div>
 
                   <h3
                     className={`text-lg font-bold tracking-wide mb-4 transition-colors duration-300 ${

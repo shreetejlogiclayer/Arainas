@@ -2,6 +2,14 @@ import { randomUUID } from "node:crypto";
 import { prisma } from "./authService.js";
 import { cleanPhone, isValidIndianPhone } from "../utils/validators.js";
 import { calculateCouponDiscount } from "../utils/crypto.js";
+import {
+  amountToPaise,
+  createPayuCheckout,
+  getPayuSettings,
+  isPayuEnabled,
+  verifyPayuCallback,
+  verifyPayuTransaction,
+} from "./payuService.js";
 
 const addressFields = [
   "houseNumber",
@@ -15,18 +23,27 @@ const addressFields = [
   "state",
   "pinCode",
 ];
+const payuTestSingleBoxPrice =
+  process.env.NODE_ENV === "development" &&
+  process.env.PAYMENT_PROVIDER === "payu" &&
+  process.env.PAYU_ENV === "test"
+    ? 1
+    : null;
 const defaultProduct = {
   name: "Araina Sanitary Pads",
   description: "Premium sanitary pads designed with women's health in focus",
   sku: "ARAINA-PADS-001",
-  variants: [
-    { name: "Regular", description: "Standard length pads" },
-    { name: "Extra Long", description: "Extra length for extended coverage" },
-  ],
   quantities: [
-    { boxes: 50, pricePerBox: 500 },
-    { boxes: 100, pricePerBox: 300 },
-    { boxes: 150, pricePerBox: 250 },
+    {
+      boxes: 1,
+      pricePerBox: payuTestSingleBoxPrice ?? 3000,
+      mrp: 4400,
+      discount: 1400,
+    },
+    { boxes: 2, pricePerBox: 2950, mrp: 8800, discount: 2900 },
+    { boxes: 3, pricePerBox: 2900, mrp: 13200, discount: 4500 },
+    { boxes: 4, pricePerBox: 2850, mrp: 17600, discount: 6200 },
+    { boxes: 5, pricePerBox: 2800, mrp: 22000, discount: 8000 },
   ],
 };
 
@@ -87,10 +104,19 @@ const serializeOrder = (order) => ({
   couponId: order.couponId,
   orderStatus: order.orderStatus,
   paymentStatus: order.paymentStatus,
+  payment: order.payment
+    ? {
+        provider: order.payment.provider,
+        transactionId: order.payment.transactionId,
+        amount: order.payment.amount,
+        status: order.payment.status,
+        paidAt:
+          order.payment.status === "success" ? order.payment.updatedAt : null,
+      }
+    : null,
   createdAt: order.createdAt,
   items: order.items.map((item) => ({
     product: item.productNameSnapshot,
-    variant: item.sizeSnapshot,
     boxes: item.quantityBoxes,
     pricePerBox: item.pricePerBoxSnapshot,
     subtotal: item.subtotal,
@@ -112,7 +138,6 @@ export const getOrderCatalog = async () => {
   const products = await prisma.product.findMany({
     where: { active: true, name: defaultProduct.name },
     include: {
-      variants: { where: { active: true }, orderBy: { name: "asc" } },
       pricingTiers: { where: { active: true }, orderBy: { boxes: "asc" } },
     },
     orderBy: { name: "asc" },
@@ -122,14 +147,23 @@ export const getOrderCatalog = async () => {
     id: product.id,
     name: product.name,
     description: product.description,
-    variants: product.variants.map((variant) => ({
-      id: variant.id,
-      name: variant.name,
-      description: variant.description,
-    })),
     quantities: product.pricingTiers.map((tier) => ({
       boxes: tier.boxes,
       pricePerBox: tier.pricePerBox,
+      executiveRate: tier.boxes * tier.pricePerBox,
+      ...(() => {
+        const pricing = defaultProduct.quantities.find(
+          (quantity) => quantity.boxes === tier.boxes,
+        );
+        return pricing
+          ? {
+              maxPricePerBox: Math.floor(pricing.mrp / tier.boxes),
+              mrp: pricing.mrp,
+              discount: pricing.mrp - tier.boxes * tier.pricePerBox,
+              discountPercentage: ((pricing.mrp - tier.boxes * tier.pricePerBox) / pricing.mrp) * 100,
+            }
+          : {};
+      })(),
     })),
   }));
 };
@@ -151,13 +185,15 @@ export const getAvailableCoupons = async (userId) =>
     orderBy: { createdAt: "asc" },
   });
 
+export const getOrderPaymentConfiguration = () => {
+  if (!isPayuEnabled()) return { enabled: false, provider: "none" };
+  getPayuSettings();
+  return { enabled: true, provider: "payu" };
+};
+
 export const ensureDefaultOrderCatalog = async () => {
   let product = await prisma.product.findUnique({
     where: { name: defaultProduct.name },
-    include: {
-      variants: { select: { id: true } },
-      pricingTiers: { select: { id: true } },
-    },
   });
   if (!product) {
     product = await prisma.product.create({
@@ -167,37 +203,103 @@ export const ensureDefaultOrderCatalog = async () => {
         sku: defaultProduct.sku,
         active: true,
       },
-      include: {
-        variants: { select: { id: true } },
-        pricingTiers: { select: { id: true } },
-      },
     });
   }
 
-  if (product.variants.length === 0) {
-    await prisma.productVariant.createMany({
-      data: defaultProduct.variants.map((variant) => ({
-        productId: product.id,
-        ...variant,
-        active: true,
-      })),
-    });
+  await prisma.pricingTier.updateMany({
+    where: { productId: product.id, active: true },
+    data: { active: false },
+  });
+  await Promise.all(
+    defaultProduct.quantities.map(({ boxes, pricePerBox }) =>
+      prisma.pricingTier.upsert({
+        where: { productId_boxes: { productId: product.id, boxes } },
+        create: { productId: product.id, boxes, pricePerBox, active: true },
+        update: {
+          active: true,
+          ...(boxes === 1 && payuTestSingleBoxPrice !== null
+            ? { pricePerBox: payuTestSingleBoxPrice }
+            : {}),
+        },
+      }),
+    ),
+  );
+};
+
+export const getOrderPricing = async () => {
+  const product = await prisma.product.findUnique({
+    where: { name: defaultProduct.name },
+    include: { pricingTiers: { where: { active: true }, orderBy: { boxes: "asc" } } },
+  });
+  if (!product || product.pricingTiers.length !== defaultProduct.quantities.length) return null;
+  if (product.pricingTiers.some((tier) =>
+    !defaultProduct.quantities.some((quantity) => quantity.boxes === tier.boxes)
+  )) return null;
+  return product.pricingTiers.map((tier) => {
+    const quantity = defaultProduct.quantities.find((item) => item.boxes === tier.boxes);
+    return {
+      boxes: tier.boxes,
+      pricePerBox: tier.pricePerBox,
+      maxPricePerBox: Math.floor(quantity.mrp / tier.boxes),
+    };
+  });
+};
+
+export const updateOrderPricing = async (prices) => {
+  const expectedTiers = defaultProduct.quantities;
+  if (!Array.isArray(prices) || prices.length !== expectedTiers.length ||
+      prices.some((tier, index) => {
+        const expected = expectedTiers[index];
+        return !tier || tier.boxes !== expected.boxes ||
+          !Number.isSafeInteger(tier.pricePerBox) || tier.pricePerBox < 1 ||
+          tier.pricePerBox > Math.floor(expected.mrp / expected.boxes);
+      })) {
+    const error = new Error("Enter a whole-number price within the allowed range for each box option.");
+    error.status = 400;
+    throw error;
   }
-  if (product.pricingTiers.length === 0) {
-    await prisma.pricingTier.createMany({
-      data: defaultProduct.quantities.map((tier) => ({
-        productId: product.id,
-        ...tier,
-        active: true,
-      })),
-    });
+
+  const product = await prisma.product.findUnique({ where: { name: defaultProduct.name } });
+  if (!product) {
+    const error = new Error("The product price tiers are not available.");
+    error.status = 503;
+    throw error;
   }
+  const tiers = await prisma.pricingTier.findMany({
+    where: { productId: product.id, active: true },
+    select: { boxes: true },
+  });
+  if (tiers.length !== expectedTiers.length ||
+      tiers.some(({ boxes }) => !expectedTiers.some((tier) => tier.boxes === boxes))) {
+    const error = new Error("The product price tiers are not available.");
+    error.status = 503;
+    throw error;
+  }
+  await prisma.$transaction(prices.map(({ boxes, pricePerBox }) =>
+    prisma.pricingTier.update({
+      where: { productId_boxes: { productId: product.id, boxes } },
+      data: { pricePerBox },
+    })
+  ));
+  return getOrderPricing();
 };
 
 export const createOrder = async (userId, input) => {
-  const { variantId, boxes, recipientType, couponId } = input;
-  if (typeof variantId !== "string" || !variantId) {
-    throw new Error("Select a product size or variant");
+  const { boxes, recipientType, couponId } = input;
+  const payuEnabled = isPayuEnabled();
+  let paymentEmail = "";
+  let paymentTransactionId = "";
+  if (payuEnabled) {
+    getPayuSettings();
+    paymentEmail =
+      typeof input.paymentEmail === "string" ? input.paymentEmail.trim() : "";
+    if (
+      paymentEmail.length > 255 ||
+      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(paymentEmail)
+    ) {
+      throw new Error("Enter a valid email address for PayU checkout.");
+    }
+    paymentTransactionId = randomUUID().replaceAll("-", "").slice(0, 25);
   }
   if (!Number.isInteger(boxes) || boxes <= 0) {
     throw new Error("Select a valid order quantity");
@@ -209,23 +311,15 @@ export const createOrder = async (userId, input) => {
     throw new Error("Select a valid coupon");
   }
 
-  const [variant, tier, user] = await Promise.all([
-    prisma.productVariant.findFirst({
-      where: {
-        id: variantId,
-        active: true,
-        product: { active: true, name: defaultProduct.name },
-      },
-      include: { product: true },
+  const [product, tier, user] = await Promise.all([
+    prisma.product.findFirst({
+      where: { active: true, name: defaultProduct.name },
     }),
     prisma.pricingTier.findFirst({
       where: {
         boxes,
         active: true,
-        product: {
-          active: true,
-          variants: { some: { id: variantId, active: true } },
-        },
+        product: { active: true, name: defaultProduct.name },
       },
     }),
     prisma.user.findUnique({
@@ -240,7 +334,7 @@ export const createOrder = async (userId, input) => {
     }),
   ]);
 
-  if (!variant) throw new Error("Selected size or variant is unavailable");
+  if (!product) throw new Error("The selected product is unavailable");
   if (!tier) throw new Error("Selected quantity is unavailable");
   if (!user || user.status !== "active") {
     throw new Error("Your account cannot place an order");
@@ -321,6 +415,11 @@ export const createOrder = async (userId, input) => {
           ),
         ),
       );
+      if (payuEnabled && subtotal - discount <= 0) {
+        throw new Error(
+          "PayU cannot process a zero-value order. Remove the coupon or contact support.",
+        );
+      }
       const reserved = await transaction.coupon.updateMany({
         where: {
           id: coupon.id,
@@ -349,17 +448,27 @@ export const createOrder = async (userId, input) => {
         discount,
         total: subtotal - discount,
         couponId: coupon?.id || null,
-        paymentStatus: "not_configured",
+        paymentStatus: payuEnabled ? "pending" : "not_configured",
         orderStatus: "pending",
         items: {
           create: {
-            productNameSnapshot: variant.product.name,
-            sizeSnapshot: variant.name,
+            productNameSnapshot: product.name,
+            sizeSnapshot: "",
             quantityBoxes: tier.boxes,
             pricePerBoxSnapshot: tier.pricePerBox,
             subtotal,
           },
         },
+        ...(payuEnabled && {
+          payment: {
+            create: {
+              provider: "payu",
+              status: "pending",
+              amount: subtotal - discount,
+              transactionId: paymentTransactionId,
+            },
+          },
+        }),
         deliveryAddress: {
           create: {
             ...address,
@@ -369,14 +478,78 @@ export const createOrder = async (userId, input) => {
           },
         },
       },
-      include: { items: true, deliveryAddress: true },
+      include: { items: true, deliveryAddress: true, payment: true },
     });
   });
 
-  return serializeOrder(order);
+  const serializedOrder = serializeOrder(order);
+  if (!payuEnabled) return serializedOrder;
+  return {
+    order: serializedOrder,
+    checkout: createPayuCheckout(
+      serializedOrder,
+      paymentTransactionId,
+      paymentEmail,
+    ),
+  };
 };
 
-export const updateOrderPaymentStatus = async (orderId, paymentStatus) => {
+export const processPayuCallback = async (callbackFields) => {
+  const callback = verifyPayuCallback(callbackFields);
+  if (!callback) return { status: "verification_failed" };
+
+  const order = await prisma.order.findUnique({
+    where: { id: callback.orderId },
+    include: { payment: true },
+  });
+  if (
+    !order ||
+    !order.payment ||
+    order.payment.provider !== "payu" ||
+    order.payment.transactionId !== callback.transactionId ||
+    amountToPaise(callback.amount) !== order.payment.amount * 100
+  ) {
+    return { status: "verification_failed" };
+  }
+
+  if (order.paymentStatus === "success") {
+    return { status: "success", orderNumber: order.orderNumber };
+  }
+
+  const verification = await verifyPayuTransaction(callback.transactionId);
+  if (!verification.verified) return { status: "pending" };
+
+  if (
+    verification.status === "success" &&
+    amountToPaise(String(verification.amount)) === order.payment.amount * 100
+  ) {
+    await updateOrderPaymentStatus(order.id, "success", {
+      status: "success",
+      transactionId: callback.transactionId,
+    });
+    return { status: "success", orderNumber: order.orderNumber };
+  }
+
+  if (
+    ["failure", "failed", "usercancelled", "dropped", "bounced"].includes(
+      verification.status,
+    )
+  ) {
+    await updateOrderPaymentStatus(order.id, "failed", {
+      status: "failed",
+      transactionId: callback.transactionId,
+    });
+    return { status: "failed", orderNumber: order.orderNumber };
+  }
+
+  return { status: "pending", orderNumber: order.orderNumber };
+};
+
+export const updateOrderPaymentStatus = async (
+  orderId,
+  paymentStatus,
+  paymentUpdate = null,
+) => {
   if (!["pending", "success", "failed"].includes(paymentStatus)) {
     throw new Error("Select a valid payment status");
   }
@@ -391,25 +564,29 @@ export const updateOrderPaymentStatus = async (orderId, paymentStatus) => {
       if (paymentStatus !== "success") {
         throw new Error("A successful payment cannot be changed");
       }
+      if (paymentUpdate) {
+        await transaction.payment.update({
+          where: { orderId },
+          data: paymentUpdate,
+        });
+      }
       const completedOrder = await transaction.order.findUnique({
         where: { id: orderId },
-        include: { items: true, deliveryAddress: true },
+        include: { items: true, deliveryAddress: true, payment: true },
       });
       return serializeOrder(completedOrder);
     }
 
     const changed = await transaction.order.updateMany({
       where: { id: orderId, paymentStatus: existingOrder.paymentStatus },
-      data: { paymentStatus },
+      data: {
+        paymentStatus,
+        ...(paymentStatus === "failed" ? { orderStatus: "cancelled" } : {}),
+      },
     });
     if (changed.count !== 1) {
       throw new Error("Payment status changed; reload the order and retry");
     }
-    const order = await transaction.order.findUnique({
-      where: { id: orderId },
-      include: { items: true, deliveryAddress: true },
-    });
-
     if (
       existingOrder.couponId &&
       paymentStatus === "pending" &&
@@ -484,14 +661,25 @@ export const updateOrderPaymentStatus = async (orderId, paymentStatus) => {
       });
     }
 
+    if (paymentUpdate) {
+      await transaction.payment.update({
+        where: { orderId },
+        data: paymentUpdate,
+      });
+    }
+
+    const order = await transaction.order.findUnique({
+      where: { id: orderId },
+      include: { items: true, deliveryAddress: true, payment: true },
+    });
     return serializeOrder(order);
   });
 };
 
 export const getUserOrders = async (userId) => {
   const orders = await prisma.order.findMany({
-    where: { userId },
-    include: { items: true, deliveryAddress: true },
+    where: { userId, paymentStatus: { not: "failed" } },
+    include: { items: true, deliveryAddress: true, payment: true },
     orderBy: { createdAt: "desc" },
   });
   return orders.map(serializeOrder);

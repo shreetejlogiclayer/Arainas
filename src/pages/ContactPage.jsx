@@ -1,12 +1,10 @@
 import React, { useEffect, useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import emailjs from "@emailjs/browser";
 import {
   Mail,
   Phone,
   MapPin,
   Clock,
-  MessageCircle,
   Send,
   CheckCircle2,
   AlertCircle,
@@ -17,7 +15,7 @@ import {
   FacebookIcon,
   YoutubeIcon,
 } from "../components/SocialIcons/SocialIcons";
-import { COMPANY_INFO, SOCIAL_LINKS, EMAIL_CONFIG } from "../config/siteConfig";
+import { COMPANY_INFO, SOCIAL_LINKS } from "../config/siteConfig";
 
 const ContactPage = () => {
   useEffect(() => {
@@ -80,57 +78,35 @@ const ContactPage = () => {
     setStatusMessage("");
 
     try {
-      const hasEmailJsKeys =
-        EMAIL_CONFIG.serviceId &&
-        EMAIL_CONFIG.templateId &&
-        EMAIL_CONFIG.publicKey;
-
-      if (hasEmailJsKeys) {
-        await emailjs.send(
-          EMAIL_CONFIG.serviceId,
-          EMAIL_CONFIG.templateId,
-          {
-            user_name: formData.user_name,
-            user_email: formData.user_email,
-            user_phone: formData.user_phone || "N/A",
-            subject: formData.subject,
-            message: formData.message,
-            to_name: COMPANY_INFO.name,
-          },
-          EMAIL_CONFIG.publicKey,
+      const response = await fetch("/api/contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
+      });
+      const result = await response.json();
+      if (!response.ok) {
+        throw new Error(
+          result?.error?.message || "Unable to send your message right now.",
         );
-
-        setSubmitStatus("success");
-        setStatusMessage(
-          "Thank you! Your message has been sent successfully. Our team will get back to you shortly.",
-        );
-        setFormData({
-          user_name: "",
-          user_email: "",
-          user_phone: "",
-          subject: "Product Inquiry",
-          message: "",
-        });
-      } else {
-        await new Promise((resolve) => setTimeout(resolve, 1200));
-
-        setSubmitStatus("success");
-        setStatusMessage(
-          "Thank you! Your enquiry has been received. (Note: EmailJS environment variables can be configured in .env for live email routing).",
-        );
-        setFormData({
-          user_name: "",
-          user_email: "",
-          user_phone: "",
-          subject: "Product Inquiry",
-          message: "",
-        });
       }
+
+      setSubmitStatus("success");
+      setStatusMessage(
+        "Thank you! Your message has been sent successfully. Our team will get back to you shortly.",
+      );
+      setFormData({
+        user_name: "",
+        user_email: "",
+        user_phone: "",
+        subject: "Product Inquiry",
+        message: "",
+      });
     } catch (error) {
-      console.error("EmailJS Error:", error);
+      console.error("Contact form submission failed:", error);
       setSubmitStatus("error");
       setStatusMessage(
-        "Unable to send message at this moment. Please try again or reach out directly via WhatsApp.",
+        error?.message ||
+          "Unable to send message at this moment. Please try again or reach out directly via WhatsApp.",
       );
     } finally {
       setIsSubmitting(false);
@@ -186,12 +162,6 @@ const ContactPage = () => {
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
             {/* Left Column: Contact Cards & Info */}
             <div className="lg:col-span-5 space-y-8">
-              <img
-                src="/assets/images/Contact_Us-removebg-preview.png"
-                alt="Contact ARAINA"
-                className="mx-auto block h-auto w-full max-w-xs object-contain"
-              />
-
               {/* Company Info Box */}
               <div className="bg-gradient-to-br from-araina-pink/5 via-araina-white to-araina-blue/5 border border-araina-pink/15 rounded-3xl p-8 shadow-sm">
                 <span className="text-[10px] uppercase font-bold tracking-widest text-araina-pink block mb-2">
@@ -335,7 +305,7 @@ const ContactPage = () => {
               </div>
             </div>
 
-            {/* Right Column: EmailJS Contact Form */}
+            {/* Right Column: Contact Form */}
             <div className="lg:col-span-7">
               <div className="bg-araina-white border border-araina-pink/15 rounded-3xl p-8 sm:p-12 shadow-lg relative">
                 <span className="text-[10px] uppercase font-bold tracking-[0.3em] text-araina-pink block mb-2">

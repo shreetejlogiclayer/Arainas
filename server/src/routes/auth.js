@@ -10,13 +10,46 @@ import {
 
 const router = express.Router();
 
+const saveSession = (req) =>
+  new Promise((resolve, reject) => {
+    req.session.save((error) => {
+      if (error) {
+        console.error("Failed to save authentication session:", error);
+        const sessionError = new Error(
+          "Unable to start your session. Please try again.",
+        );
+        sessionError.status = 500;
+        reject(sessionError);
+        return;
+      }
+      resolve();
+    });
+  });
+
+const sendRouteError = (res, error, fallback, defaultStatus = 400) => {
+  const candidateStatus = Number.isInteger(error?.status)
+    ? error.status
+    : error?.code
+      ? 500
+      : defaultStatus;
+  const status =
+    Number.isInteger(candidateStatus) && candidateStatus >= 400 && candidateStatus <= 599
+      ? candidateStatus
+      : 500;
+  const message =
+    status >= 500 || error?.name === "TypeError"
+      ? fallback
+      : error?.message || fallback;
+  return res.status(status).json({ error: { status, message } });
+};
+
 /**
  * POST /api/auth/register
  * Register a new user
  */
 router.post("/register", async (req, res) => {
   try {
-    const { email, mobile, password, confirmPassword, referredByCode } = req.body;
+    const { mobile, password, confirmPassword, referredByCode } = req.body;
 
     // Validate required fields
     if (!mobile || !password || !confirmPassword) {
@@ -41,7 +74,6 @@ router.post("/register", async (req, res) => {
 
     // Register user
     const user = await authService.registerUser(
-      email,
       mobile,
       password,
       referredByCode,
@@ -49,25 +81,30 @@ router.post("/register", async (req, res) => {
 
     // Create session
     req.session.userId = user.userId;
-    req.session.userEmail = user.email;
     req.session.userMobile = user.mobile;
+    await saveSession(req);
 
     res.status(201).json({
       success: true,
       message: "Account created successfully",
       data: {
         userId: user.userId,
-        email: user.email,
       },
     });
   } catch (error) {
-    const statusCode = error.message.includes("already registered") ? 409 : 400;
-    res.status(statusCode).json({
-      error: {
-        status: statusCode,
-        message: error.message,
-      },
-    });
+    const status =
+      error?.status ||
+      (error?.message?.includes("already registered")
+        ? 409
+        : error?.code
+          ? 500
+          : 400);
+    sendRouteError(
+      res,
+      error,
+      "We couldn’t create your account right now. Please try again.",
+      status,
+    );
   }
 });
 
@@ -93,30 +130,25 @@ router.post("/login", async (req, res) => {
 
     // Create session
     req.session.userId = user.userId;
-    req.session.userEmail = user.email;
     req.session.userMobile = user.mobile;
 
     // Set session expiry based on rememberMe
     if (rememberMe) {
       req.session.cookie.maxAge = 30 * 24 * 60 * 60 * 1000; // 30 days
     }
+    await saveSession(req);
 
     res.json({
       success: true,
       message: "Login successful",
       data: {
         userId: user.userId,
-        email: user.email,
+        mobile: user.mobile,
         profile: user.profile,
       },
     });
   } catch (error) {
-    res.status(401).json({
-      error: {
-        status: 401,
-        message: error.message || "Invalid credentials",
-      },
-    });
+    sendRouteError(res, error, "We couldn’t sign you in. Please try again.", 401);
   }
 });
 
@@ -176,12 +208,11 @@ router.post("/forgot-password", async (req, res) => {
       },
     });
   } catch (error) {
-    res.status(400).json({
-      error: {
-        status: 400,
-        message: error.message,
-      },
-    });
+    sendRouteError(
+      res,
+      error,
+      "We couldn’t start a password reset right now. Please try again.",
+    );
   }
 });
 
@@ -218,12 +249,11 @@ router.post("/reset-password", async (req, res) => {
       message: result.message,
     });
   } catch (error) {
-    res.status(400).json({
-      error: {
-        status: 400,
-        message: error.message,
-      },
-    });
+    sendRouteError(
+      res,
+      error,
+      "We couldn’t reset your password. Check the link and try again.",
+    );
   }
 });
 
@@ -240,12 +270,7 @@ router.get("/me", sessionAuthMiddleware, async (req, res) => {
       data: user,
     });
   } catch (error) {
-    res.status(404).json({
-      error: {
-        status: 404,
-        message: error.message,
-      },
-    });
+    sendRouteError(res, error, "We couldn’t load your account details.", 404);
   }
 });
 
@@ -270,12 +295,7 @@ router.put("/profile", sessionAuthMiddleware, async (req, res) => {
       data: profile,
     });
   } catch (error) {
-    res.status(400).json({
-      error: {
-        status: 400,
-        message: error.message,
-      },
-    });
+    sendRouteError(res, error, "We couldn’t update your profile. Please try again.");
   }
 });
 
@@ -287,7 +307,7 @@ router.post("/addresses", sessionAuthMiddleware, async (req, res) => {
     );
     res.status(201).json({ success: true, data: address });
   } catch (error) {
-    res.status(400).json({ error: { status: 400, message: error.message } });
+    sendRouteError(res, error, "We couldn’t save this address. Please try again.");
   }
 });
 
@@ -300,7 +320,7 @@ router.put("/addresses/:addressId", sessionAuthMiddleware, async (req, res) => {
     );
     res.json({ success: true, data: address });
   } catch (error) {
-    res.status(400).json({ error: { status: 400, message: error.message } });
+    sendRouteError(res, error, "We couldn’t update this address. Please try again.");
   }
 });
 
@@ -315,7 +335,11 @@ router.patch(
       );
       res.json({ success: true, data: address });
     } catch (error) {
-      res.status(400).json({ error: { status: 400, message: error.message } });
+      sendRouteError(
+        res,
+        error,
+        "We couldn’t update your default address. Please try again.",
+      );
     }
   },
 );
@@ -328,7 +352,7 @@ router.delete(
       await authService.deleteUserAddress(req.userId, req.params.addressId);
       res.json({ success: true, message: "Address deleted" });
     } catch (error) {
-      res.status(400).json({ error: { status: 400, message: error.message } });
+      sendRouteError(res, error, "We couldn’t delete this address. Please try again.");
     }
   },
 );
@@ -349,7 +373,7 @@ router.post(
       );
       res.status(201).json({ success: true, data: photo });
     } catch (error) {
-      res.status(400).json({ error: { status: 400, message: error.message } });
+      sendRouteError(res, error, "We couldn’t update your profile photo. Please try again.");
     }
   },
 );
@@ -387,7 +411,7 @@ router.delete(
       await deleteProfilePhoto(req.userId, req.params.photoId);
       res.json({ success: true, message: "Profile photo deleted" });
     } catch (error) {
-      res.status(400).json({ error: { status: 400, message: error.message } });
+      sendRouteError(res, error, "We couldn’t remove your profile photo. Please try again.");
     }
   },
 );
@@ -403,8 +427,13 @@ router.post(
       );
       res.json({ success: true, data });
     } catch (error) {
-      const status = error.message.includes("unavailable") ? 503 : 400;
-      res.status(status).json({ error: { status, message: error.message } });
+      const status = error?.message?.includes("unavailable") ? 503 : undefined;
+      sendRouteError(
+        res,
+        error,
+        "We couldn’t request verification right now. Please try again later.",
+        status || 400,
+      );
     }
   },
 );
@@ -420,8 +449,13 @@ router.post(
       );
       res.json({ success: true, data });
     } catch (error) {
-      const status = error.message.includes("unavailable") ? 503 : 400;
-      res.status(status).json({ error: { status, message: error.message } });
+      const status = error?.message?.includes("unavailable") ? 503 : undefined;
+      sendRouteError(
+        res,
+        error,
+        "We couldn’t verify your details right now. Please try again later.",
+        status || 400,
+      );
     }
   },
 );
@@ -439,12 +473,7 @@ router.get("/referrals", sessionAuthMiddleware, async (req, res) => {
       data: referralInfo,
     });
   } catch (error) {
-    res.status(400).json({
-      error: {
-        status: 400,
-        message: error.message,
-      },
-    });
+    sendRouteError(res, error, "We couldn’t load your referral information. Please try again.", 500);
   }
 });
 

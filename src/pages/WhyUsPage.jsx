@@ -1,6 +1,14 @@
 import React, { useEffect } from "react";
 import { motion } from "framer-motion";
-import { Check } from "lucide-react";
+import {
+  BriefcaseBusiness,
+  Check,
+  HeartPulse,
+  House,
+  Sparkles,
+  TrendingUp,
+  UsersRound,
+} from "lucide-react";
 import { Link } from "react-router-dom";
 
 const WhyUsPage = () => {
@@ -13,28 +21,28 @@ const WhyUsPage = () => {
       title: "Comfort",
       description:
         "Thoughtfully positioned menstrual care designed around women's needs, offering premium softness, breathability, and ergonomic security.",
-      image: "/assets/images/Comfort.png",
+      icon: HeartPulse,
       badge: "Ergonomic Design",
     },
     {
       title: "Hygiene",
       description:
         "A focus on safe, responsible menstrual care with strict quality standards and touch-free automated manufacturing practices.",
-      image: "/assets/images/Hygiene-removebg-preview.png",
+      icon: ShieldCheck,
       badge: "Touch-Free Process",
     },
     {
       title: "Confidence",
       description:
         "Helping women experience their periods with confidence and comfort, rather than compromise, fear, or limitations.",
-      image: "/assets/images/Confidence.png",
+      icon: Sparkles,
       badge: "Pure Peace of Mind",
     },
     {
       title: "Empowerment",
       description:
         "Connecting women's health with entrepreneurship, learning, and meaningful financial opportunities to rise together.",
-      image: "/assets/images/Empowerment-removebg-preview.png",
+      icon: TrendingUp,
       badge: "Ecosystem of Rise",
     },
   ];
@@ -43,33 +51,32 @@ const WhyUsPage = () => {
     {
       title: "Better Health",
       desc: "Quality feminine care and menstrual hygiene awareness as the essential foundation.",
-      image: "/assets/images/Better_Health-removebg-preview.png",
+      icon: HeartPulse,
     },
     {
       title: "Greater Confidence",
       desc: "Approaching everyday life and choices with comfort, free from fear or limitations.",
-      image: "/assets/images/Greater Confidence.png",
+      icon: Sparkles,
     },
     {
       title: "Meaningful Opportunity",
       desc: "Flexible business platforms that allow women to learn and grow at their own pace.",
-      image: "/assets/images/Meaningful_opportunity-removebg-preview.png",
+      icon: BriefcaseBusiness,
     },
     {
       title: "Financial Independence",
       desc: "Developing skills, earning with dignity, and taking control of their own futures.",
-      image: "/assets/images/Financial_Independence-removebg-preview.png",
+      icon: TrendingUp,
     },
     {
       title: "Stronger Families",
       desc: "When a woman is empowered, she strengthens her household and sets a new example.",
-      image: "/assets/images/Stronger Families.png",
+      icon: House,
     },
     {
       title: "Stronger Communities",
       desc: "Progress that inspires others, turning individual growth into collective upliftment.",
-      image:
-        "/assets/images/10_Community___Collective_Growth-removebg-preview.png",
+      icon: UsersRound,
     },
   ];
 
@@ -155,17 +162,9 @@ const WhyUsPage = () => {
                   className="bg-araina-white border border-araina-pink/10 hover:border-araina-pink/30 rounded-3xl p-8 shadow-sm hover:shadow-lg transition-all duration-300 flex flex-col justify-between group relative overflow-hidden"
                 >
                   <div>
-                    {p.image ? (
-                      <img
-                        src={p.image}
-                        alt=""
-                        className="mx-auto mb-6 block h-40 w-40 object-contain transition-transform duration-300 group-hover:scale-105"
-                      />
-                    ) : (
-                      <div className="inline-flex rounded-2xl bg-araina-pink/10 p-4 text-araina-pink transition-all duration-300 group-hover:bg-araina-pink group-hover:text-araina-white">
-                        <Icon size={24} />
-                      </div>
-                    )}
+                    <div className="mb-6 inline-flex rounded-2xl bg-araina-pink/10 p-4 text-araina-pink transition-all duration-300 group-hover:bg-araina-pink group-hover:text-araina-white">
+                      <Icon size={24} />
+                    </div>
                     <span className="text-[9px] uppercase font-bold tracking-widest text-araina-blue bg-araina-blue/10 px-2.5 py-1 rounded-full block w-fit mb-3">
                       {p.badge}
                     </span>
@@ -206,27 +205,19 @@ const WhyUsPage = () => {
               return (
                 <div
                   key={idx}
-                  className={`bg-araina-white border border-araina-pink/10 rounded-2xl p-6 shadow-sm hover:border-araina-pink/30 transition-all ${step.image ? "flex flex-col" : "flex items-start gap-4"}`}
+                  className="group flex items-start gap-4 rounded-2xl border border-araina-pink/10 bg-white/80 p-6 shadow-sm transition-all hover:-translate-y-1 hover:border-araina-pink/30 hover:shadow-lg hover:shadow-araina-pink/5"
                 >
-                  {step.image ? (
-                    <img
-                      src={step.image}
-                      alt=""
-                      className="mx-auto mb-4 block h-40 w-40 object-contain"
-                    />
-                  ) : (
-                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-araina-pink/20 bg-gradient-to-tr from-araina-pink/10 to-araina-blue/10 text-araina-pink">
-                      <Icon size={20} />
-                    </div>
-                  )}
+                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-araina-pink/10 text-araina-pink transition-colors group-hover:bg-araina-pink group-hover:text-white">
+                    <Icon size={21} strokeWidth={1.8} />
+                  </div>
                   <div>
-                    <span className="text-[10px] uppercase font-bold tracking-widest text-araina-pink block mb-1">
+                    <span className="mb-1 block text-[9px] font-bold uppercase tracking-[0.18em] text-araina-blue">
                       Step 0{idx + 1}
                     </span>
-                    <h4 className="text-sm font-bold text-araina-black mb-1">
+                    <h4 className="mb-2 text-sm font-bold text-araina-black transition-colors group-hover:text-araina-pink">
                       {step.title}
                     </h4>
-                    <p className="text-xs text-araina-black/65 font-light leading-relaxed">
+                    <p className="text-xs font-light leading-relaxed text-araina-black/65">
                       {step.desc}
                     </p>
                   </div>

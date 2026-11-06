@@ -6,11 +6,28 @@ import { rateLimit } from "../middleware/auth.js";
 import { deleteStoredProfilePhotos } from "../services/profileMediaService.js";
 import { generateRandomCode } from "../utils/crypto.js";
 import { cleanPhone, isValidEmail, isValidIndianPhone, normalizeEmail } from "../utils/validators.js";
-import { updateOrderPaymentStatus } from "../services/orderService.js";
+import { getOrderPricing, updateOrderPaymentStatus, updateOrderPricing } from "../services/orderService.js";
 
 const router = express.Router();
 const orderStatuses = ["pending", "processing", "shipped", "delivered", "cancelled"];
 const paymentStatuses = ["not_configured", "pending", "success", "failed"];
+const pricingAdminEmails = new Set(["rohini.dixit@arainas.com", "yogendra.dixit@arainas.com"]);
+const completedMemberWhere = {
+  role: { notIn: ["admin", "manager"] },
+  profile: { is: { fullName: { not: "" } } },
+  addresses: {
+    some: {
+      isDefault: true,
+      houseNumber: { not: "" },
+      street: { not: "" },
+      area: { not: "" },
+      city: { not: "" },
+      district: { not: "" },
+      state: { not: "" },
+      pinCode: { not: "" },
+    },
+  },
+};
 const addressSelect = {
   houseNumber: true,
   building: true,
@@ -85,16 +102,48 @@ router.use(async (req, res, next) => {
   try {
     const admin = await prisma.user.findUnique({
       where: { id: adminId },
-      select: { role: true, status: true },
+      select: { email: true, role: true, status: true },
     });
     if (!admin || !["admin", "manager"].includes(admin.role) || admin.status !== "active") {
       delete req.session.adminUserId;
       return res.status(403).json({ error: { message: "Admin access is no longer authorized." } });
     }
+    req.adminEmail = admin.email?.toLowerCase();
+    req.adminRole = admin.role;
     return next();
   } catch (error) {
     console.error("Admin authorization check failed:", error);
     return res.status(500).json({ error: { message: "Unable to verify admin access." } });
+  }
+});
+
+router.get("/pricing", async (req, res) => {
+  if (req.adminRole !== "admin" || !pricingAdminEmails.has(req.adminEmail)) {
+    return res.status(403).json({ error: { message: "Only Admin 1 and Admin 2 can view product pricing." } });
+  }
+  try {
+    const pricing = await getOrderPricing();
+    if (!pricing || pricing.length !== 5) {
+      return res.status(503).json({ error: { message: "The five product price tiers are not available." } });
+    }
+    return res.json({ success: true, data: pricing });
+  } catch (error) {
+    console.error("Admin product pricing load failed:", error);
+    return res.status(500).json({ error: { message: "Unable to load product pricing." } });
+  }
+});
+
+router.patch("/pricing", async (req, res) => {
+  if (req.adminRole !== "admin" || !pricingAdminEmails.has(req.adminEmail)) {
+    return res.status(403).json({ error: { message: "Only Admin 1 and Admin 2 can update product pricing." } });
+  }
+  try {
+    const updated = await updateOrderPricing(req.body?.prices);
+    return res.json({ success: true, data: updated });
+  } catch (error) {
+    if (error.status) return res.status(error.status).json({ error: { message: error.message } });
+    console.error("Admin product pricing update failed:", error);
+    return res.status(500).json({ error: { message: "Unable to update product pricing." } });
   }
 });
 
@@ -197,8 +246,8 @@ router.get("/overview", async (req, res) => {
   try {
     const since = new Date(Date.now() - 24 * 60 * 60 * 1000);
     const [members, activeMembers, orders, newlyReceived, grouped] = await Promise.all([
-      prisma.user.count({ where: { role: { notIn: ["admin", "manager"] } } }),
-      prisma.user.count({ where: { status: "active", role: { notIn: ["admin", "manager"] } } }),
+      prisma.user.count({ where: completedMemberWhere }),
+      prisma.user.count({ where: { ...completedMemberWhere, status: "active" } }),
       prisma.order.count(),
       prisma.order.count({ where: { orderStatus: "pending", createdAt: { gte: since } } }),
       prisma.order.groupBy({ by: ["orderStatus"], _count: { _all: true } }),
@@ -221,18 +270,20 @@ router.get("/members", async (req, res) => {
   const pagination = getPagination(req.query);
   if (!pagination) return res.status(400).json({ error: { message: "Invalid page or page size." } });
   const search = typeof req.query.search === "string" ? req.query.search.trim().slice(0, 100) : "";
-  const where = search ? {
-    OR: [
-      { mobile: { contains: search } },
-      { email: { contains: search } },
-      { profile: { is: { fullName: { contains: search } } } },
-    ],
-    role: { notIn: ["admin", "manager"] },
-  } : { role: { notIn: ["admin", "manager"] } };
+  const where = {
+    ...completedMemberWhere,
+    ...(search ? {
+      OR: [
+        { mobile: { contains: search } },
+        { email: { contains: search } },
+        { profile: { is: { fullName: { contains: search } } } },
+      ],
+    } : {}),
+  };
   try {
     const [items, total] = await Promise.all([
       prisma.user.findMany({
-        where: { ...where, role: { notIn: ["admin", "manager"] } },
+        where,
         skip: pagination.skip,
         take: pagination.limit,
         orderBy: { createdAt: "desc" },
@@ -241,7 +292,7 @@ router.get("/members", async (req, res) => {
           profile: { select: { fullName: true, alternateMobile: true, referralCode: true } },
         },
       }),
-      prisma.user.count({ where: { ...where, role: { notIn: ["admin", "manager"] } } }),
+      prisma.user.count({ where }),
     ]);
     return res.json({ success: true, data: { items, total, page: pagination.page, pageSize: pagination.limit } });
   } catch (error) {
@@ -445,7 +496,7 @@ router.get("/orders", async (req, res) => {
         select: {
           id: true, orderNumber: true, orderedByName: true, orderedByMobile: true,
           recipientType: true, deliveryRecipientName: true, subtotal: true, discount: true,
-          total: true, orderStatus: true, paymentStatus: true, createdAt: true,
+          total: true, orderStatus: true, paymentStatus: true, parcelSummaryDownloaded: true, createdAt: true,
         },
       }),
       prisma.order.count({ where }),
@@ -457,19 +508,58 @@ router.get("/orders", async (req, res) => {
   }
 });
 
+router.patch("/orders/:id/parcel-summary-downloaded", async (req, res) => {
+  if (!validId(req.params.id)) return res.status(400).json({ error: { message: "Invalid order ID." } });
+  try {
+    const updated = await prisma.order.updateMany({
+      where: { id: req.params.id, parcelSummaryDownloaded: false },
+      data: { parcelSummaryDownloaded: true },
+    });
+    if (!updated.count) {
+      const order = await prisma.order.findUnique({
+        where: { id: req.params.id },
+        select: { id: true, parcelSummaryDownloaded: true },
+      });
+      if (!order) return res.status(404).json({ error: { message: "Order not found." } });
+      return res.json({ success: true, data: order });
+    }
+    return res.json({
+      success: true,
+      data: { id: req.params.id, parcelSummaryDownloaded: true },
+    });
+  } catch (error) {
+    console.error("Admin parcel summary tracking failed:", error);
+    return res.status(500).json({ error: { message: "Unable to save parcel summary status." } });
+  }
+});
+
 router.get("/customer-orders", async (req, res) => {
   const pagination = getPagination(req.query);
   if (!pagination) return res.status(400).json({ error: { message: "Invalid page or page size." } });
   const search = typeof req.query.search === "string" ? req.query.search.trim().slice(0, 100) : "";
   const from = parseDate(req.query.from);
   const to = parseDate(req.query.to);
+  const orderedThisMonth = req.query.orderedThisMonth;
+  if (orderedThisMonth && !["yes", "no"].includes(orderedThisMonth)) {
+    return res.status(400).json({ error: { message: "Invalid this-month order filter." } });
+  }
   if ((req.query.from && !from) || (req.query.to && !to) || (from && to && from > to)) {
     return res.status(400).json({ error: { message: "Enter a valid order date range." } });
   }
 
+  const [monthStart, nextMonthStart] = getIndiaMonthRange();
   const filters = [Prisma.sql`u.role NOT IN ('admin', 'manager')`];
   if (from) filters.push(Prisma.sql`o.createdAt >= ${from}`);
   if (to) filters.push(Prisma.sql`o.createdAt < ${new Date(to.getTime() + 24 * 60 * 60 * 1000)}`);
+  if (orderedThisMonth) {
+    const existsThisMonth = Prisma.sql`EXISTS (
+      SELECT 1 FROM \`Order\` monthOrder
+      WHERE monthOrder.userId = o.userId
+        AND monthOrder.createdAt >= ${monthStart}
+        AND monthOrder.createdAt < ${nextMonthStart}
+    )`;
+    filters.push(orderedThisMonth === "yes" ? existsThisMonth : Prisma.sql`NOT ${existsThisMonth}`);
+  }
   if (search) {
     const searchTerm = `%${search}%`;
     filters.push(Prisma.sql`(p.fullName LIKE ${searchTerm} OR o.orderedByName LIKE ${searchTerm} OR u.mobile LIKE ${searchTerm})`);
@@ -495,7 +585,21 @@ router.get("/customer-orders", async (req, res) => {
           COALESCE(p.fullName, MAX(o.orderedByName)) AS name,
           COALESCE(NULLIF(u.mobile, ''), MAX(o.orderedByMobile)) AS mobile,
           COUNT(*) AS orderCount,
-          MAX(o.createdAt) AS lastOrderAt
+          MAX(o.createdAt) AS lastOrderAt,
+          (SELECT COALESCE(SUM(lastItems.quantityBoxes), 0)
+            FROM \`OrderItem\` lastItems
+            WHERE lastItems.orderId = (
+              SELECT latest.id FROM \`Order\` latest
+              WHERE latest.userId = o.userId
+              ORDER BY latest.createdAt DESC, latest.id DESC
+              LIMIT 1
+            )) AS lastOrderBoxes,
+          EXISTS (
+            SELECT 1 FROM \`Order\` monthOrder
+            WHERE monthOrder.userId = o.userId
+              AND monthOrder.createdAt >= ${monthStart}
+              AND monthOrder.createdAt < ${nextMonthStart}
+          ) AS orderedThisMonth
         FROM \`Order\` o
         INNER JOIN \`User\` u ON u.id = o.userId
         LEFT JOIN \`Profile\` p ON p.userId = u.id
@@ -509,7 +613,12 @@ router.get("/customer-orders", async (req, res) => {
     return res.json({
       success: true,
       data: {
-        items: items.map((item) => ({ ...item, orderCount: Number(item.orderCount) })),
+        items: items.map((item) => ({
+          ...item,
+          orderCount: Number(item.orderCount),
+          lastOrderBoxes: Number(item.lastOrderBoxes),
+          orderedThisMonth: Boolean(item.orderedThisMonth),
+        })),
         total,
         page: pagination.page,
         pageSize: pagination.limit,
@@ -551,6 +660,40 @@ router.patch("/orders/:id/payment-status", async (req, res) => {
   }
 });
 
+router.patch("/orders/:id/status", async (req, res) => {
+  if (!validId(req.params.id)) return res.status(400).json({ error: { message: "Invalid order ID." } });
+  const orderStatus = req.body?.orderStatus;
+  const allowedCurrentStatuses = {
+    shipped: ["pending", "processing"],
+    delivered: ["shipped"],
+  }[orderStatus];
+  if (!allowedCurrentStatuses) {
+    return res.status(400).json({ error: { message: "Select a valid next order status." } });
+  }
+  try {
+    const updated = await prisma.order.updateMany({
+      where: { id: req.params.id, orderStatus: { in: allowedCurrentStatuses } },
+      data: { orderStatus },
+    });
+    if (!updated.count) {
+      const current = await prisma.order.findUnique({
+        where: { id: req.params.id },
+        select: { orderStatus: true },
+      });
+      if (!current) return res.status(404).json({ error: { message: "Order not found." } });
+      return res.status(409).json({ error: { message: "This order cannot move to that status. Reload the order and retry." } });
+    }
+    const order = await prisma.order.findUnique({
+      where: { id: req.params.id },
+      select: { id: true, orderStatus: true, updatedAt: true },
+    });
+    return res.json({ success: true, data: order });
+  } catch (error) {
+    console.error("Admin order status update failed:", error);
+    return res.status(500).json({ error: { message: "Unable to update order status." } });
+  }
+});
+
 router.get("/orders/:id", async (req, res) => {
   if (!validId(req.params.id)) return res.status(400).json({ error: { message: "Invalid order ID." } });
   try {
@@ -559,7 +702,7 @@ router.get("/orders/:id", async (req, res) => {
       select: {
         id: true, orderNumber: true, orderedByName: true, orderedByMobile: true,
         recipientType: true, deliveryRecipientName: true, subtotal: true, discount: true,
-        total: true, orderStatus: true, paymentStatus: true, createdAt: true, updatedAt: true,
+        total: true, orderStatus: true, paymentStatus: true, parcelSummaryDownloaded: true, createdAt: true, updatedAt: true,
         items: { select: { productNameSnapshot: true, sizeSnapshot: true, quantityBoxes: true, pricePerBoxSnapshot: true, subtotal: true } },
         deliveryAddress: { select: {
           houseNumber: true, building: true, street: true, area: true, landmark: true,
@@ -588,6 +731,21 @@ function parseDate(value) {
   if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return null;
   const parsed = new Date(`${value}T00:00:00.000Z`);
   return Number.isNaN(parsed.getTime()) || parsed.toISOString().slice(0, 10) !== value ? null : parsed;
+}
+
+function getIndiaMonthRange(now = new Date()) {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: "Asia/Kolkata",
+    year: "numeric",
+    month: "numeric",
+  }).formatToParts(now);
+  const year = Number(parts.find((part) => part.type === "year")?.value);
+  const month = Number(parts.find((part) => part.type === "month")?.value);
+  const indiaOffset = 330 * 60 * 1000;
+  return [
+    new Date(Date.UTC(year, month - 1, 1) - indiaOffset),
+    new Date(Date.UTC(year, month, 1) - indiaOffset),
+  ];
 }
 
 function validId(value) {

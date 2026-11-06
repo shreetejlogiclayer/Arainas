@@ -4,22 +4,6 @@ import { ArrowRight } from "lucide-react";
 import { Link } from "react-router-dom";
 
 const FinalCTA = () => {
-  const handleScrollTo = (id) => {
-    const element = document.getElementById(id);
-    if (element) {
-      const offset = 80;
-      const bodyRect = document.body.getBoundingClientRect().top;
-      const elementRect = element.getBoundingClientRect().top;
-      const elementPosition = elementRect - bodyRect;
-      const offsetPosition = elementPosition - offset;
-
-      window.scrollTo({
-        top: offsetPosition,
-        behavior: "smooth",
-      });
-    }
-  };
-
   return (
     <section className="py-24 bg-gradient-to-b from-araina-white via-araina-pink/5 to-araina-blue/10 relative overflow-hidden butterfly-background section-divider">
       <div className="max-w-4xl mx-auto px-6 relative z-10 text-center">
@@ -53,12 +37,12 @@ const FinalCTA = () => {
             >
               Discover Araina <ArrowRight size={14} />
             </Link>
-            <button
-              onClick={() => handleScrollTo("join-us")}
+            <Link
+              to="/opportunity"
               className="border border-araina-black/20 hover:border-araina-pink hover:text-araina-pink text-araina-black text-xs uppercase tracking-widest font-bold px-8 py-4 rounded-full transition-all duration-300 bg-araina-white w-full sm:w-auto"
             >
-              Join Us — Coming Soon
-            </button>
+              Explore the opportunity
+            </Link>
           </div>
         </motion.div>
       </div>

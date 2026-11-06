@@ -1,5 +1,17 @@
 import React, { useState } from "react";
 import { motion } from "framer-motion";
+import {
+  Award,
+  BadgeCheck,
+  BookOpenCheck,
+  BriefcaseBusiness,
+  HeartPulse,
+  HandHeart,
+  Mountain,
+  ShieldCheck,
+  UsersRound,
+  Eye,
+} from "lucide-react";
 
 const Values = () => {
   const [hoveredIdx, setHoveredIdx] = useState(null);
@@ -7,53 +19,52 @@ const Values = () => {
   const valuesList = [
     {
       title: "Integrity & Honesty",
-      image: "/assets/images/01_Integrity___Honesty-removebg-preview.png",
+      icon: BadgeCheck,
       desc: "We believe trust begins with doing the right thing and communicating honestly.",
     },
     {
       title: "Women's Health First",
-      image: "/assets/images/02_Women_s_Health_First-removebg-preview.png",
+      icon: HeartPulse,
       desc: "Women's well-being remains at the heart of our purpose and our work.",
     },
     {
       title: "Uncompromising Quality",
-      image: "/assets/images/03_Uncompramising_Quality-removebg-preview.png",
+      icon: Award,
       desc: "We believe women deserve thoughtful, quality-focused products and experiences.",
     },
     {
       title: "Trust & Transparency",
-      image: "/assets/images/04_Trust___Transperency-removebg-preview.png",
+      icon: Eye,
       desc: "We value openness, clarity, accountability, and relationships built for the long term.",
     },
     {
       title: "Empowerment Through Opportunity",
-      image: "/assets/images/Empowerment-removebg-preview.png",
+      icon: BriefcaseBusiness,
       desc: "We believe meaningful opportunities can help women develop confidence, skills, independence, and a stronger sense of possibility.",
     },
     {
       title: "Respect & Dignity",
-      image: "/assets/images/Our_Values-removebg-preview.png",
+      icon: HandHeart,
       desc: "Every woman deserves to be treated with respect, understanding, and dignity.",
     },
     {
       title: "Courage & Perseverance",
-      image: "/assets/images/Opportunity_to_Rise-removebg-preview.png",
+      icon: Mountain,
       desc: "Building something meaningful requires the courage to begin and the perseverance to continue.",
     },
     {
       title: "Continuous Learning & Improvement",
-      image: "/assets/images/Quality_Management-removebg-preview.png",
+      icon: BookOpenCheck,
       desc: "We believe growth comes from remaining curious, learning continuously, listening, and improving.",
     },
     {
       title: "Responsibility",
-      image: "/assets/images/Our_Commitment-removebg-preview.png",
+      icon: ShieldCheck,
       desc: "We take responsibility for our actions, our communication, our commitments, and the impact we aim to create.",
     },
     {
       title: "Community & Collective Growth",
-      image:
-        "/assets/images/10_Community___Collective_Growth-removebg-preview.png",
+      icon: UsersRound,
       desc: "We believe progress becomes more powerful when people support one another and grow together. When women support women, everyone rises.",
     },
   ];
@@ -78,9 +89,11 @@ const Values = () => {
         </div>
 
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
-          {valuesList.map((val, idx) => (
-            <motion.article
-              key={val.image}
+          {valuesList.map((val, idx) => {
+            const Icon = val.icon;
+            return (
+              <motion.article
+              key={val.title}
               onMouseEnter={() => setHoveredIdx(idx)}
               onMouseLeave={() => setHoveredIdx(null)}
               className={`relative flex h-full flex-col items-center overflow-hidden rounded-2xl border bg-araina-white p-6 text-center transition-all duration-500 ${
@@ -99,13 +112,15 @@ const Values = () => {
                 }`}
               />
               <div className="relative z-10 flex h-full flex-col items-center">
-                <img
-                  src={val.image}
-                  alt=""
-                  className={`mb-5 ${idx === 9 ? "h-28 w-28" : "h-36 w-36"} object-contain transition-transform duration-500 ${
-                    hoveredIdx === idx ? "rotate-3 scale-110" : ""
+                <div
+                  className={`mb-5 flex h-14 w-14 items-center justify-center rounded-2xl transition-all duration-300 ${
+                    hoveredIdx === idx
+                      ? "scale-105 bg-araina-pink text-white"
+                      : "bg-araina-pink/10 text-araina-pink"
                   }`}
-                />
+                >
+                  <Icon size={25} strokeWidth={1.8} />
+                </div>
                 <h3
                   className={`mb-3 text-sm font-bold tracking-wide transition-colors duration-300 ${
                     hoveredIdx === idx
@@ -119,8 +134,9 @@ const Values = () => {
                   {val.desc}
                 </p>
               </div>
-            </motion.article>
-          ))}
+              </motion.article>
+            );
+          })}
         </div>
       </div>
     </section>

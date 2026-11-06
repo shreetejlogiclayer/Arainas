@@ -15,6 +15,8 @@ import {
   isValidIndianPhone,
   isValidPIN,
 } from "../../utils/formatters";
+import { getPortalErrorMessage } from "../../utils/errorMessages";
+import { requestPortalJson } from "../../utils/portalApi";
 
 const fieldClassName =
   "w-full min-w-0 rounded-xl border border-araina-pink/20 bg-white px-4 py-3 text-sm text-araina-black outline-none transition placeholder:text-araina-black/35 focus:border-araina-pink focus:ring-4 focus:ring-araina-pink/10 disabled:bg-gray-50";
@@ -83,21 +85,12 @@ const ProfileForm = ({ mode = "create", children }) => {
 
     const loadProfile = async () => {
       try {
-        const response = await fetch("/api/auth/me", {
-          credentials: "include",
+        const user = await requestPortalJson("/api/auth/me", {
           signal: controller.signal,
         });
-        const result = await response.json();
-
-        if (!response.ok) {
-          throw new Error(
-            result.error?.message || "Unable to load your account details.",
-          );
-        }
-
-        const profile = result.data.profile || {};
-        const address = result.data.address || {};
-        setAccount(result.data);
+        const profile = user.profile || {};
+        const address = user.address || {};
+        setAccount(user);
         setForm({
           ...initialForm,
           fullName: profile.fullName || "",
@@ -119,7 +112,14 @@ const ProfileForm = ({ mode = "create", children }) => {
           navigate("/portal/dashboard", { replace: true });
         }
       } catch (loadError) {
-        if (loadError.name !== "AbortError") setError(loadError.message);
+        if (loadError.name !== "AbortError") {
+          setError(
+            getPortalErrorMessage(
+              loadError,
+              "We couldn’t load your account details. Please refresh and try again.",
+            ),
+          );
+        }
       } finally {
         if (!controller.signal.aborted) setIsLoading(false);
       }
@@ -203,10 +203,9 @@ const ProfileForm = ({ mode = "create", children }) => {
 
     setIsSaving(true);
     try {
-      const response = await fetch("/api/auth/profile", {
+      await requestPortalJson("/api/auth/profile", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        credentials: "include",
         body: JSON.stringify({
           fullName: form.fullName.trim(),
           alternateMobile: form.alternateMobile.trim(),
@@ -225,11 +224,6 @@ const ProfileForm = ({ mode = "create", children }) => {
           },
         }),
       });
-      const result = await response.json();
-
-      if (!response.ok) {
-        throw new Error(result.error?.message || "Unable to save your profile.");
-      }
 
       if (isEditing) {
         setSuccess("Your profile and address have been updated.");
@@ -237,7 +231,12 @@ const ProfileForm = ({ mode = "create", children }) => {
         navigate("/portal/dashboard", { replace: true });
       }
     } catch (saveError) {
-      setError(saveError.message);
+      setError(
+        getPortalErrorMessage(
+          saveError,
+          "We couldn’t save your profile. Please try again.",
+        ),
+      );
     } finally {
       setIsSaving(false);
     }
@@ -283,6 +282,11 @@ const ProfileForm = ({ mode = "create", children }) => {
       {fieldErrors[name] && (
         <p id={`${name}-error`} className="mt-1.5 text-xs text-red-600">
           {fieldErrors[name]}
+        </p>
+      )}
+      {name === "referredByCode" && (
+        <p className="mt-1.5 text-xs text-araina-black/55">
+          Referral rewards are applied when you save your profile.
         </p>
       )}
     </div>
@@ -391,9 +395,6 @@ const ProfileForm = ({ mode = "create", children }) => {
                             Verified
                           </span>
                         )}
-                      </p>
-                      <p className="mt-1 break-all text-xs text-araina-black/55">
-                        Email (optional): {account?.email || "Not added"}
                       </p>
                     </div>
                   </div>

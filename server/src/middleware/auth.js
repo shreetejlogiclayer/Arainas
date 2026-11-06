@@ -1,5 +1,6 @@
 import { verifyToken, extractTokenFromHeader } from "../utils/crypto.js";
 import { Errors } from "../utils/errors.js";
+import { prisma } from "../services/authService.js";
 
 /**
  * Middleware to verify JWT token from Authorization header
@@ -43,7 +44,7 @@ export const authMiddleware = (req, res, next) => {
 /**
  * Middleware to extract user ID from session
  */
-export const sessionAuthMiddleware = (req, res, next) => {
+export const sessionAuthMiddleware = async (req, res, next) => {
   if (!req.session || !req.session.userId) {
     return res.status(401).json({
       error: {
@@ -53,8 +54,36 @@ export const sessionAuthMiddleware = (req, res, next) => {
     });
   }
 
-  req.userId = req.session.userId;
-  next();
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: req.session.userId },
+      select: { status: true },
+    });
+    if (!user || user.status !== "active") {
+      return req.session.destroy((error) => {
+        if (error) {
+          console.error("Could not end inactive user session:", error);
+          return res.status(500).json({
+            error: { status: 500, message: "Unable to end this account session." },
+          });
+        }
+        return res.status(401).json({
+          error: {
+            status: 401,
+            message: user ? "Your account is suspended. Contact support." : "Session expired. Please log in again.",
+          },
+        });
+      });
+    }
+
+    req.userId = req.session.userId;
+    return next();
+  } catch (error) {
+    console.error("Could not verify user session status:", error);
+    return res.status(500).json({
+      error: { status: 500, message: "Unable to verify account status." },
+    });
+  }
 };
 
 /**

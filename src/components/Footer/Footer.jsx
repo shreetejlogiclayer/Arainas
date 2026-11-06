@@ -14,9 +14,13 @@ const Footer = () => {
 
   const menuItems = [
     { name: "Home", path: "/" },
-    { name: "About", path: "/about" },
-    { name: "Products / Services", path: "/products" },
-    { name: "Why Us / Benefits", path: "/why-us" },
+    { name: "About Us", path: "/about" },
+    { name: "Araina", path: "/araina" },
+    { name: "Product", path: "/products" },
+    { name: "Women’s Health", path: "/womens-health" },
+    { name: "Women’s Opportunity", path: "/opportunity" },
+    { name: "Career", path: "/career" },
+    { name: "Media", path: "/media" },
     { name: "Contact Us", path: "/contact" },
   ];
 
@@ -90,6 +94,15 @@ const Footer = () => {
                   <YoutubeIcon size={16} />
                 </a>
               ) : null}
+              <a
+                href={whatsappUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Contact Araina on WhatsApp"
+                className="w-9 h-9 rounded-full bg-araina-white/5 border border-araina-white/10 flex items-center justify-center text-araina-white/80 hover:text-araina-pink hover:border-araina-pink transition-all"
+              >
+                <MessageCircle size={16} />
+              </a>
             </div>
           </div>
 

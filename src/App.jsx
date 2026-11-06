@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { Component, useState, useEffect } from "react";
 import { Routes, Route, useLocation } from "react-router-dom";
 import Navbar from "./components/Navbar/Navbar";
 import Footer from "./components/Footer/Footer";
@@ -9,6 +9,10 @@ import AboutPage from "./pages/AboutPage";
 import ProductsPage from "./pages/ProductsPage";
 import WhyUsPage from "./pages/WhyUsPage";
 import ContactPage from "./pages/ContactPage";
+import ArainaPage from "./pages/ArainaPage";
+import WomensHealthPage from "./pages/WomensHealthPage";
+import OpportunityPage from "./pages/OpportunityPage";
+import MediaPage from "./pages/MediaPage";
 
 // Portal Imports
 import ProtectedRoute from "./portal/components/ProtectedRoute/ProtectedRoute";
@@ -22,6 +26,44 @@ import OrdersPage from "./portal/pages/OrdersPage/OrdersPage";
 import ProfilePage from "./portal/pages/ProfilePage/ProfilePage";
 import ReferralsPage from "./portal/pages/ReferralsPage/ReferralsPage";
 import CouponsPage from "./portal/pages/CouponsPage/CouponsPage";
+
+class AppErrorBoundary extends Component {
+  state = { hasError: false };
+
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+
+  componentDidCatch(error) {
+    console.error("Page rendering failed:", error);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <section
+          role="alert"
+          className="mx-auto my-16 max-w-xl rounded-2xl border border-araina-pink/15 bg-white p-8 text-center shadow-sm"
+        >
+          <h1 className="text-xl font-semibold text-araina-black">
+            This page couldn’t be displayed
+          </h1>
+          <p className="mt-3 text-sm text-araina-black/60">
+            Please try again. Your saved information has not been changed.
+          </p>
+          <button
+            type="button"
+            onClick={() => window.location.reload()}
+            className="mt-6 rounded-lg bg-araina-pink px-5 py-3 text-xs font-semibold uppercase tracking-wider text-white"
+          >
+            Reload page
+          </button>
+        </section>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 function App() {
   const [activeSection, setActiveSection] = useState("home");
@@ -74,6 +116,79 @@ function App() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, [location.pathname]);
 
+  useEffect(() => {
+    if (
+      location.pathname === "/" ||
+      location.pathname.startsWith("/portal") ||
+      typeof IntersectionObserver === "undefined"
+    ) {
+      return;
+    }
+
+    let observer;
+    const frame = window.requestAnimationFrame(() => {
+      const revealTargets = document.querySelectorAll(
+        ".public-page-background h1, .public-page-background h2, .public-page-background h3, .public-page-background h4, .public-page-background p, .public-page-background article, .public-page-background li, .public-page-background blockquote, .public-page-background button, .public-page-background a[class*='inline-flex']",
+      );
+      const revealImages = document.querySelectorAll(
+        ".public-page-background img",
+      );
+      const sectionDelays = new Map();
+
+      observer = new IntersectionObserver(
+        (entries) => {
+          entries.forEach((entry) => {
+            if (!entry.isIntersecting) return;
+            entry.target.classList.add(
+              entry.target.tagName === "IMG"
+                ? "public-page-image-revealed"
+                : "public-page-revealed",
+            );
+            observer.unobserve(entry.target);
+          });
+        },
+        { threshold: 0.12 },
+      );
+
+      revealTargets.forEach((element) => {
+        if (element.style.opacity || element.style.transform) return;
+
+        const section = element.closest("section");
+        const delay = sectionDelays.get(section) || 0;
+        sectionDelays.set(section, delay + 1);
+        element.style.setProperty(
+          "--public-reveal-delay",
+          `${Math.min(delay, 5) * 80}ms`,
+        );
+        element.classList.add("public-page-reveal");
+        observer.observe(element);
+      });
+
+      revealImages.forEach((image) => {
+        image.classList.add("public-page-image-reveal");
+        observer.observe(image);
+      });
+    });
+
+    return () => {
+      window.cancelAnimationFrame(frame);
+      observer?.disconnect();
+      document
+        .querySelectorAll(
+          ".public-page-reveal, .public-page-revealed, .public-page-image-reveal, .public-page-image-revealed",
+        )
+        .forEach((element) => {
+          element.classList.remove(
+            "public-page-reveal",
+            "public-page-revealed",
+            "public-page-image-reveal",
+            "public-page-image-revealed",
+          );
+          element.style.removeProperty("--public-reveal-delay");
+        });
+    };
+  }, [location.pathname]);
+
   // Check if current route is portal route
   const isPortalRoute = location.pathname.startsWith("/portal");
   const showPublicLayout = !isPortalRoute;
@@ -92,6 +207,7 @@ function App() {
       <main
         className={`flex-grow ${showPublicLayout ? "public-page-background" : ""}`}
       >
+        <AppErrorBoundary key={location.pathname}>
         <Routes>
           {/* ==================== PUBLIC ROUTES ==================== */}
           <Route path="/" element={<HomePage />} />
@@ -99,6 +215,11 @@ function App() {
           <Route path="/products" element={<ProductsPage />} />
           <Route path="/why-us" element={<WhyUsPage />} />
           <Route path="/contact" element={<ContactPage />} />
+          <Route path="/araina" element={<ArainaPage />} />
+          <Route path="/womens-health" element={<WomensHealthPage />} />
+          <Route path="/opportunity" element={<OpportunityPage />} />
+          <Route path="/career" element={<OpportunityPage careerPage />} />
+          <Route path="/media" element={<MediaPage />} />
 
           {/* ==================== PORTAL ROUTES ==================== */}
           {/* Authentication Routes (No Protection) */}
@@ -178,6 +299,7 @@ function App() {
             }
           />
         </Routes>
+        </AppErrorBoundary>
       </main>
 
       {showPublicLayout && <Footer setActiveSection={setActiveSection} />}

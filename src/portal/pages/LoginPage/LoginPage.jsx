@@ -3,11 +3,13 @@ import { useNavigate, Link } from "react-router-dom";
 import { Eye, EyeOff } from "lucide-react";
 import AuthCard from "../../components/AuthCard/AuthCard";
 import { isValidIndianPhone } from "../../utils/formatters";
+import { getPortalErrorMessage } from "../../utils/errorMessages";
+import { requestPortalJson } from "../../utils/portalApi";
 
 /**
  * Login Page
  * First page users see when opening portal
- * - Email/mobile/username field
+ * - Mobile number field
  * - Password field with show/hide toggle
  * - Remember Me checkbox
  * - Form validation and error handling
@@ -58,37 +60,30 @@ const LoginPage = () => {
     setIsLoading(true);
 
     try {
-      const response = await fetch("/api/auth/login", {
+      const user = await requestPortalJson("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        credentials: "include",
         body: JSON.stringify({ mobile, password, rememberMe }),
       });
-      const result = await response.json();
-
-      if (!response.ok) {
-        setApiError(result.error?.message || "Unable to log in. Please try again.");
-        return;
-      }
 
       localStorage.setItem("authToken", "session");
-      localStorage.setItem("userMobile", result.data.mobile || mobile);
-      if (result.data.email) {
-        localStorage.setItem("userEmail", result.data.email);
-      } else {
-        localStorage.removeItem("userEmail");
-      }
+      localStorage.setItem("userMobile", user.mobile || mobile);
+      localStorage.removeItem("userEmail");
       navigate(
-        result.data.profile?.fullName?.trim() &&
-          result.data.profile?.address?.id
+        user.profile?.fullName?.trim() &&
+          user.profile?.address?.id
           ? "/portal/dashboard"
           : "/portal/create-profile",
       );
     } catch (err) {
       setApiError(
-        "Unable to reach the Araina server. Start the backend and check its database configuration, then try again.",
+        err?.status === 401
+          ? err.message
+          : getPortalErrorMessage(
+          err,
+          "We couldn’t sign you in. Please check your details and try again.",
+        ),
       );
-      console.error("Login error:", err);
     } finally {
       setIsLoading(false);
     }

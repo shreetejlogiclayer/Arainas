@@ -2,6 +2,8 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import PortalLayout from "../../components/PortalLayout/PortalLayout";
 import { formatPhone } from "../../utils/formatters";
+import { getPortalErrorMessage } from "../../utils/errorMessages";
+import { requestPortalJson } from "../../utils/portalApi";
 
 /**
  * Dashboard Page
@@ -19,58 +21,51 @@ const DashboardPage = () => {
     const loadUser = async () => {
       try {
         const [accountResult, ordersResult] = await Promise.allSettled([
-          fetch("/api/auth/me", {
-            credentials: "include",
-            signal: controller.signal,
-          }),
-          fetch("/api/orders", {
-            credentials: "include",
-            signal: controller.signal,
-          }),
+          requestPortalJson("/api/auth/me", { signal: controller.signal }),
+          requestPortalJson("/api/orders", { signal: controller.signal }),
         ]);
         if (accountResult.status === "rejected") throw accountResult.reason;
-        const response = accountResult.value;
-        const result = await response.json();
-        if (!response.ok) {
-          throw new Error(
-            result.error?.message || "Unable to load your account.",
-          );
+        const user = accountResult.value;
+        if (!user || typeof user !== "object") {
+          throw new Error("We couldn’t load your account. Please refresh and try again.");
         }
-
-        const user = result.data;
         setUserData({
           name: user.profile?.fullName?.trim() || "Araina Member",
           mobile: user.mobile,
-          email: user.email,
           totalOrders: null,
           referralCount: 0,
           availableCoupons: 0,
           usedCoupons: 0,
         });
         if (user.mobile) localStorage.setItem("userMobile", user.mobile);
-        if (user.email) localStorage.setItem("userEmail", user.email);
-        else localStorage.removeItem("userEmail");
+        localStorage.removeItem("userEmail");
 
-        if (ordersResult.status === "fulfilled" && ordersResult.value.ok) {
-          const orderData = await ordersResult.value.json();
-          setUserData((current) => ({
-            ...current,
-            totalOrders: Array.isArray(orderData.data)
-              ? orderData.data.length
-              : 0,
-          }));
+        if (ordersResult.status === "fulfilled") {
+          if (Array.isArray(ordersResult.value)) {
+            setUserData((current) => ({
+              ...current,
+              totalOrders: ordersResult.value.length,
+            }));
+          } else {
+            setLoadError("We couldn’t load your order count. Please try again.");
+          }
         } else {
-          const orderResponse =
-            ordersResult.status === "fulfilled" ? ordersResult.value : null;
-          const orderError = orderResponse
-            ? await orderResponse.json()
-            : null;
           setLoadError(
-            orderError?.error?.message || "Unable to load your order count.",
+            getPortalErrorMessage(
+              ordersResult.reason,
+              "We couldn’t load your order count. Please try again.",
+            ),
           );
         }
       } catch (error) {
-        if (error.name !== "AbortError") setLoadError(error.message);
+        if (error.name !== "AbortError") {
+          setLoadError(
+            getPortalErrorMessage(
+              error,
+              "We couldn’t load your dashboard. Please refresh and try again.",
+            ),
+          );
+        }
       } finally {
         if (!controller.signal.aborted) setIsLoading(false);
       }
@@ -109,9 +104,6 @@ const DashboardPage = () => {
           <div className="mt-4 inline-flex flex-col gap-1 rounded-xl border border-araina-pink/10 bg-white/75 px-4 py-3 text-left sm:flex-row sm:items-center sm:gap-5">
             <span className="text-sm font-semibold text-araina-black">
               Mobile: {userData?.mobile ? formatPhone(userData.mobile) : "Not available"}
-            </span>
-            <span className="text-xs text-araina-black/55">
-              Email (optional): {userData?.email || "Not added"}
             </span>
           </div>
         </div>

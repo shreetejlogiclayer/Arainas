@@ -1,7 +1,7 @@
 /**
  * ARAINA / Royo India LLP - Site Configuration
  *
- * Update contact details, social links, and EmailJS environment variables here.
+ * Update contact details and social links here.
  */
 
 export const COMPANY_INFO = {
@@ -24,20 +24,7 @@ export const COMPANY_INFO = {
  * If a URL is empty, the icon will remain in placeholder mode or be hidden according to UI rules.
  */
 export const SOCIAL_LINKS = {
-  instagram: "https://instagram.com/arainawellness",
-  facebook: "https://facebook.com/arainawellness",
-  youtube: "https://youtube.com/@arainawellness",
-};
-
-/**
- * EmailJS Configuration
- * Set your EmailJS keys in your .env file or deployment environment variables:
- * VITE_EMAILJS_SERVICE_ID=your_service_id
- * VITE_EMAILJS_TEMPLATE_ID=your_template_id
- * VITE_EMAILJS_PUBLIC_KEY=your_public_key
- */
-export const EMAIL_CONFIG = {
-  serviceId: import.meta.env.VITE_EMAILJS_SERVICE_ID || "",
-  templateId: import.meta.env.VITE_EMAILJS_TEMPLATE_ID || "",
-  publicKey: import.meta.env.VITE_EMAILJS_PUBLIC_KEY || "",
+  instagram: "https://www.instagram.com/arainasofficial?igsi=MWl4d3Jqems3bWJ5Zw==",
+  facebook: "https://www.facebook.com/profile.php?id=61593433111036",
+  youtube: "https://www.youtube.com/@arainas_official",
 };

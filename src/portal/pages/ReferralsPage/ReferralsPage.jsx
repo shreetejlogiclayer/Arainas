@@ -9,6 +9,8 @@ import {
 } from "lucide-react";
 import PortalLayout from "../../components/PortalLayout/PortalLayout";
 import { formatDate } from "../../utils/formatters";
+import { getPortalErrorMessage } from "../../utils/errorMessages";
+import { requestPortalJson } from "../../utils/portalApi";
 
 const ReferralsPage = () => {
   const [data, setData] = useState(null);
@@ -17,19 +19,23 @@ const ReferralsPage = () => {
   const [copied, setCopied] = useState(false);
 
   const loadReferrals = useCallback(async () => {
-    const response = await fetch("/api/auth/referrals", {
-      credentials: "include",
-    });
-    const result = await response.json();
-    if (!response.ok) {
-      throw new Error(result.error?.message || "Unable to load referrals.");
+    const referralInfo = await requestPortalJson("/api/auth/referrals");
+    if (!Array.isArray(referralInfo?.referrals)) {
+      throw new Error("We couldn’t load your referral information. Please refresh and try again.");
     }
-    setData(result.data);
+    setData(referralInfo);
   }, []);
 
   useEffect(() => {
     loadReferrals()
-      .catch((loadError) => setError(loadError.message))
+      .catch((loadError) =>
+        setError(
+          getPortalErrorMessage(
+            loadError,
+            "We couldn’t load your referral information. Please refresh and try again.",
+          ),
+        ),
+      )
       .finally(() => setIsLoading(false));
   }, [loadReferrals]);
 

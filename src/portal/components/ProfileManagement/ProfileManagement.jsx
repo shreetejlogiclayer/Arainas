@@ -1,18 +1,17 @@
 import React, { useCallback, useEffect, useState } from "react";
 import {
-  BadgeCheck,
   Camera,
   Check,
   CircleUserRound,
   Home,
   LoaderCircle,
   MapPin,
-  ShieldCheck,
   Trash2,
   Video,
   X,
 } from "lucide-react";
-import { formatDate } from "../../utils/formatters";
+import { getPortalErrorMessage } from "../../utils/errorMessages";
+import { requestPortalJson } from "../../utils/portalApi";
 
 const emptyAddress = {
   houseNumber: "",
@@ -44,12 +43,7 @@ const inputClass =
   "w-full min-w-0 rounded-lg border border-araina-pink/20 bg-white px-3 py-2.5 text-sm outline-none focus:border-araina-pink focus:ring-2 focus:ring-araina-pink/10";
 
 const apiRequest = async (url, options = {}) => {
-  const response = await fetch(url, { credentials: "include", ...options });
-  const result = await response.json();
-  if (!response.ok) {
-    throw new Error(result.error?.message || "The request could not be completed.");
-  }
-  return result.data;
+  return requestPortalJson(url, options);
 };
 
 const AddressBook = () => {
@@ -68,7 +62,14 @@ const AddressBook = () => {
 
   useEffect(() => {
     loadAddresses()
-      .catch((loadError) => setError(loadError.message))
+      .catch((loadError) =>
+        setError(
+          getPortalErrorMessage(
+            loadError,
+            "We couldn’t load your saved addresses. Please refresh and try again.",
+          ),
+        ),
+      )
       .finally(() => setIsLoading(false));
   }, [loadAddresses]);
 
@@ -113,7 +114,12 @@ const AddressBook = () => {
       setIsAdding(false);
       setEditingId("");
     } catch (saveError) {
-      setError(saveError.message);
+      setError(
+        getPortalErrorMessage(
+          saveError,
+          "We couldn’t save this address. Please try again.",
+        ),
+      );
     } finally {
       setIsSaving(false);
     }
@@ -127,7 +133,12 @@ const AddressBook = () => {
       });
       await loadAddresses();
     } catch (requestError) {
-      setError(requestError.message);
+      setError(
+        getPortalErrorMessage(
+          requestError,
+          "We couldn’t update your default address. Please try again.",
+        ),
+      );
     }
   };
 
@@ -140,7 +151,12 @@ const AddressBook = () => {
       });
       await loadAddresses();
     } catch (requestError) {
-      setError(requestError.message);
+      setError(
+        getPortalErrorMessage(
+          requestError,
+          "We couldn’t delete this address. Please try again.",
+        ),
+      );
     }
   };
 
@@ -310,13 +326,8 @@ const AddressBook = () => {
 
 const ProfileSecurity = () => {
   const [user, setUser] = useState(null);
-  const [aadhaar, setAadhaar] = useState("");
-  const [otp, setOtp] = useState("");
-  const [developmentOtp, setDevelopmentOtp] = useState("");
-  const [requestNewOtp, setRequestNewOtp] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
-  const [isBusy, setIsBusy] = useState(false);
   const [photoBusy, setPhotoBusy] = useState(false);
   const [isCameraOpen, setIsCameraOpen] = useState(false);
   const [cameraError, setCameraError] = useState("");
@@ -424,7 +435,12 @@ const ProfileSecurity = () => {
     try {
       await uploadImage(file);
     } catch (uploadError) {
-      setError(uploadError.message);
+      setError(
+        getPortalErrorMessage(
+          uploadError,
+          "We couldn’t update your profile photo. Please try again.",
+        ),
+      );
     }
   };
 
@@ -457,7 +473,12 @@ const ProfileSecurity = () => {
       await uploadImage(photoBlob);
       closeCamera();
     } catch (uploadError) {
-      setCameraError(uploadError.message);
+      setCameraError(
+        getPortalErrorMessage(
+          uploadError,
+          "We couldn’t update your profile photo. Please try again.",
+        ),
+      );
     }
   };
 
@@ -473,59 +494,14 @@ const ProfileSecurity = () => {
       await refreshUser();
       setMessage("Profile photo removed.");
     } catch (removeError) {
-      setError(removeError.message);
+      setError(
+        getPortalErrorMessage(
+          removeError,
+          "We couldn’t remove your profile photo. Please try again.",
+        ),
+      );
     } finally {
       setPhotoBusy(false);
-    }
-  };
-
-  const requestOtp = async (event) => {
-    event.preventDefault();
-    setError("");
-    setMessage("");
-    setIsBusy(true);
-    try {
-      const result = await apiRequest("/api/auth/aadhaar/request-otp", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ aadhaar }),
-      });
-      setAadhaar("");
-      setOtp("");
-      setDevelopmentOtp(result.developmentOtp || "");
-      setRequestNewOtp(false);
-      setMessage(
-        result.developmentOtp
-          ? `Development OTP: ${result.developmentOtp}. This mock does not verify Aadhaar with UIDAI.`
-          : `OTP requested for Aadhaar ending in ${result.aadhaarLast4}.`,
-      );
-      await refreshUser();
-    } catch (requestError) {
-      setError(requestError.message);
-    } finally {
-      setIsBusy(false);
-    }
-  };
-
-  const verifyOtp = async (event) => {
-    event.preventDefault();
-    setError("");
-    setMessage("");
-    setIsBusy(true);
-    try {
-      await apiRequest("/api/auth/aadhaar/verify-otp", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ otp }),
-      });
-      setOtp("");
-      setDevelopmentOtp("");
-      setMessage("Mock Aadhaar verification completed for development.");
-      await refreshUser();
-    } catch (verifyError) {
-      setError(verifyError.message);
-    } finally {
-      setIsBusy(false);
     }
   };
 
@@ -533,15 +509,8 @@ const ProfileSecurity = () => {
     user?.photos?.find(
       (item) => item.url === user.profile?.photoKeyReference,
     ) || user?.photos?.[0];
-  const aadhaarStatus =
-    user?.aadhaarVerification?.verificationStatus ||
-    user?.profile?.aadhaarVerificationStatus ||
-    "unverified";
-  const isOtpPending = aadhaarStatus === "otp_sent";
-  const isAadhaarVerified = aadhaarStatus === "verified";
-
   return (
-    <section className="mx-auto grid w-full max-w-6xl grid-cols-1 gap-6 lg:grid-cols-2">
+    <section className="mx-auto w-full max-w-6xl">
       <div className="rounded-3xl border border-araina-pink/15 bg-white/95 p-5 shadow-lg shadow-araina-pink/5 sm:p-7">
         <div className="mb-5 flex items-center gap-3">
           <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-araina-pink/10 text-araina-pink">
@@ -684,131 +653,6 @@ const ProfileSecurity = () => {
         )}
       </div>
 
-      <div className="rounded-3xl border border-araina-blue/15 bg-white/95 p-5 shadow-lg shadow-araina-blue/5 sm:p-7">
-        <div className="mb-5 flex items-center gap-3">
-          <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-araina-blue/10 text-araina-blue">
-            <ShieldCheck size={20} />
-          </span>
-          <div>
-            <h2 className="font-semibold text-araina-black">Account verification</h2>
-            <p className="mt-1 text-xs text-araina-black/55">Verification status saved to your account</p>
-          </div>
-        </div>
-
-        {user && (
-          <div className="mb-5 grid grid-cols-1 gap-2 sm:grid-cols-2">
-            {[
-              ["Email", user.email || "Not provided", user.emailVerified],
-              ["Mobile", user.mobile, user.mobileVerified],
-              ["Account", user.status, user.status === "active"],
-              ["Member type", user.role, true],
-              ["Member since", formatDate(user.createdAt), true],
-            ].map(([label, value, verified]) => (
-              <div key={label} className="flex items-center justify-between gap-3 rounded-xl bg-gray-50 px-3 py-2.5">
-                <span className="min-w-0 truncate text-xs text-araina-black/55">{label}: {value}</span>
-                {label !== "Member since" && label !== "Member type" && (
-                  <span className={`shrink-0 text-[10px] font-semibold uppercase ${verified ? "text-green-700" : "text-araina-black/40"}`}>
-                    {verified ? "Verified" : "Unverified"}
-                  </span>
-                )}
-              </div>
-            ))}
-          </div>
-        )}
-
-        <div className="rounded-2xl border border-araina-pink/10 p-4">
-          <div className="mb-3 flex items-center justify-between gap-2">
-            <p className="text-sm font-semibold text-araina-black">Aadhaar</p>
-            <span className={`rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase ${
-              isAadhaarVerified
-                ? "bg-green-50 text-green-700"
-                : isOtpPending
-                  ? "bg-amber-50 text-amber-700"
-                  : "bg-gray-100 text-gray-600"
-            }`}>
-              {aadhaarStatus.replace("_", " ")}
-            </span>
-          </div>
-          {user?.aadhaarVerification?.aadhaarLast4 && (
-            <p className="mb-3 text-xs text-araina-black/55">
-              Aadhaar ending in •••• {user.aadhaarVerification.aadhaarLast4}
-              {user.aadhaarVerification.verifiedAt &&
-                ` · Verified ${formatDate(user.aadhaarVerification.verifiedAt)}`}
-            </p>
-          )}
-          <p className="mb-4 text-xs leading-5 text-araina-black/55">
-            Only the last four digits are stored. Local mock verification is not an official UIDAI verification; production requires an authorized provider.
-          </p>
-          {isAadhaarVerified ? (
-            <p className="flex items-center gap-2 text-sm font-medium text-green-700">
-              <BadgeCheck size={18} /> Verified in development mock
-            </p>
-          ) : isOtpPending && !requestNewOtp ? (
-            <div className="space-y-3">
-            <form onSubmit={verifyOtp} className="flex flex-col gap-3 sm:flex-row">
-              <input
-                inputMode="numeric"
-                autoComplete="one-time-code"
-                maxLength={6}
-                required
-                value={otp}
-                onChange={(event) => setOtp(event.target.value.replace(/\D/g, "").slice(0, 6))}
-                placeholder="6-digit OTP"
-                className={`${inputClass} sm:flex-1`}
-              />
-              <button
-                type="submit"
-                disabled={isBusy}
-                className="min-h-11 rounded-lg bg-araina-blue px-4 text-xs font-semibold uppercase tracking-wider text-white disabled:opacity-50"
-              >
-                Verify OTP
-              </button>
-            </form>
-              <button
-                type="button"
-                onClick={() => setRequestNewOtp(true)}
-                className="text-xs font-medium text-araina-pink hover:underline"
-              >
-                Request another code
-              </button>
-            </div>
-          ) : (
-            <form onSubmit={requestOtp} className="space-y-3">
-              <input
-                inputMode="numeric"
-                autoComplete="off"
-                maxLength={12}
-                required
-                value={aadhaar}
-                onChange={(event) => setAadhaar(event.target.value.replace(/\D/g, "").slice(0, 12))}
-                placeholder="12-digit Aadhaar number"
-                className={inputClass}
-              />
-              <button
-                type="submit"
-                disabled={isBusy || aadhaar.length !== 12}
-                className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg bg-araina-blue px-4 text-xs font-semibold uppercase tracking-wider text-white disabled:opacity-50"
-              >
-                {isBusy && <LoaderCircle size={15} className="animate-spin" />}
-                Request development OTP
-              </button>
-            </form>
-          )}
-        </div>
-        {(error || message) && (
-          <p
-            role={error ? "alert" : "status"}
-            className={`mt-3 rounded-lg p-3 text-xs leading-5 ${
-              error ? "bg-red-50 text-red-700" : "bg-green-50 text-green-800"
-            }`}
-          >
-            {error || message}
-          </p>
-        )}
-        {developmentOtp && (
-          <p className="sr-only">Development OTP: {developmentOtp}</p>
-        )}
-      </div>
     </section>
   );
 };

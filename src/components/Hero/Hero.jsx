@@ -1,125 +1,107 @@
 import React from "react";
 import { motion } from "framer-motion";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, HeartHandshake } from "lucide-react";
+import { Link } from "react-router-dom";
 
-const Hero = () => {
-  const handleScrollTo = (id) => {
-    const element = document.getElementById(id);
-    if (element) {
-      const offset = 80;
-      const bodyRect = document.body.getBoundingClientRect().top;
-      const elementRect = element.getBoundingClientRect().top;
-      const elementPosition = elementRect - bodyRect;
-      const offsetPosition = elementPosition - offset;
+const Hero = () => (
+  <section
+    id="home"
+    className="relative flex min-h-screen items-center justify-center overflow-hidden border-b border-araina-pink/20 bg-gradient-to-tr from-araina-white via-araina-pink/5 to-araina-blue/5 pb-16 pt-28 butterfly-background"
+  >
+    <div className="pointer-events-none absolute -left-20 top-1/4 h-80 w-80 rounded-full bg-araina-pink/5 blur-3xl" />
+    <div className="pointer-events-none absolute -bottom-16 right-0 h-96 w-96 rounded-full bg-araina-blue/10 blur-3xl" />
 
-      window.scrollTo({
-        top: offsetPosition,
-        behavior: "smooth",
-      });
-    }
-  };
-
-  return (
-    <section
-      id="home"
-      className="min-h-screen pt-24 pb-12 flex items-center justify-center relative overflow-hidden bg-gradient-to-tr from-araina-white via-araina-pink/5 to-araina-blue/5 butterfly-background section-divider"
-    >
-      {/* Background elegant circles/lines */}
-      <div className="absolute top-1/4 left-10 w-96 h-96 bg-araina-pink/5 rounded-full blur-3xl pointer-events-none" />
-      <div className="absolute bottom-1/4 right-10 w-96 h-96 bg-araina-blue/5 rounded-full blur-3xl pointer-events-none" />
-
-      <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-12 gap-12 items-center relative z-10 w-full">
-        {/* Content Column */}
-        <div className="lg:col-span-7 flex flex-col items-center lg:items-start text-center lg:text-left">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, ease: "easeOut" }}
-            className="mb-4"
-          >
-            <span className="text-xs font-bold uppercase tracking-[0.25em] text-araina-pink bg-araina-pink/10 px-4 py-2 rounded-full">
-              Feminine Hygiene & Empowerment
-            </span>
-          </motion.div>
-
-          <motion.h1
-            initial={{ opacity: 0, y: 40 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 1, delay: 0.2, ease: "easeOut" }}
-            className="text-4xl sm:text-5xl md:text-6xl font-extrabold text-araina-black tracking-tight leading-[1.1] mb-6"
-          >
-            Empowering <br />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-araina-pink to-araina-blue">
-              To Rise
-            </span>
-          </motion.h1>
-
-          <motion.p
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.4, ease: "easeOut" }}
-            className="text-sm sm:text-base text-araina-black/70 max-w-xl leading-relaxed mb-8 font-light"
-          >
+    <div className="relative z-10 mx-auto grid w-full max-w-7xl items-center gap-12 px-6 lg:grid-cols-12 lg:gap-10">
+      <div className="flex flex-col items-center text-center lg:col-span-7 lg:items-start lg:text-left">
+        <motion.span
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.7 }}
+          className="mb-5 inline-flex rounded-full border border-araina-pink/15 bg-white/80 px-4 py-2 text-[10px] font-bold uppercase tracking-[0.2em] text-araina-pink shadow-sm"
+        >
+          Women&apos;s health · Confidence · Opportunity
+        </motion.span>
+        <motion.h1
+          initial={{ opacity: 0, y: 25 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, delay: 0.1 }}
+          className="mb-6 text-5xl font-extrabold leading-[1.05] tracking-tight text-araina-black sm:text-6xl lg:text-7xl"
+        >
+          Empowering
+          <br />
+          <span className="bg-gradient-to-r from-araina-pink to-araina-blue bg-clip-text text-transparent">
+            To Rise
+          </span>
+        </motion.h1>
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, delay: 0.2 }}
+          className="max-w-2xl space-y-4 text-sm font-light leading-7 text-araina-black/70 sm:text-base"
+        >
+          <p>
+            Women&apos;s health, confidence, opportunity, and empowerment—brought
+            together with purpose.
+          </p>
+          <p>
             Araina is our flagship feminine hygiene brand, created with a simple
             purpose—to bring care, awareness, confidence, and opportunity closer
-            to women. Because when a woman takes care of herself, understands
-            her choices, and believes in her potential, she becomes stronger in
-            every part of life.
-          </motion.p>
-
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.6, ease: "easeOut" }}
-            className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto"
+            to women.
+          </p>
+          <p>
+            Because when a woman takes care of herself, understands her choices,
+            and believes in her potential, she becomes stronger in every part
+            of life. When one woman rises, she empowers another woman to rise
+            alongside her.
+          </p>
+        </motion.div>
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.7, delay: 0.35 }}
+          className="mt-8 flex w-full flex-col gap-3 sm:w-auto sm:flex-row"
+        >
+          <Link
+            to="/araina"
+            className="inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-araina-pink px-7 py-3 text-[10px] font-bold uppercase tracking-[0.16em] text-white shadow-lg shadow-araina-pink/20 transition hover:-translate-y-0.5 hover:bg-araina-pink/90"
           >
-            <button
-              onClick={() => handleScrollTo("product")}
-              className="bg-araina-pink hover:bg-araina-pink/90 text-araina-white text-xs uppercase tracking-widest font-bold px-8 py-4 rounded-full transition-all duration-300 transform hover:-translate-y-[2px] active:translate-y-0 shadow-md hover:shadow-lg shadow-araina-pink/20 flex items-center justify-center gap-2"
-            >
-              Discover Araina <ArrowRight size={14} />
-            </button>
-            <button
-              onClick={() => handleScrollTo("purpose")}
-              className="border border-araina-black/20 hover:border-araina-pink hover:text-araina-pink text-araina-black text-xs uppercase tracking-widest font-bold px-8 py-4 rounded-full transition-all duration-300 bg-transparent flex items-center justify-center"
-            >
-              Our Purpose
-            </button>
-          </motion.div>
-        </div>
-
-        {/* Product Visual Column */}
-        <div className="lg:col-span-5 flex justify-center items-center">
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9, rotate: -2 }}
-            animate={{ opacity: 1, scale: 1, rotate: 0 }}
-            transition={{ duration: 1.2, delay: 0.4, ease: "easeOut" }}
-            className="relative w-full max-w-[380px] sm:max-w-[420px]"
+            Know Araina <ArrowRight size={14} />
+          </Link>
+          <Link
+            to="/opportunity"
+            className="inline-flex min-h-12 items-center justify-center gap-2 rounded-full border border-araina-black/15 bg-white/70 px-7 py-3 text-[10px] font-bold uppercase tracking-[0.16em] text-araina-black transition hover:border-araina-pink hover:text-araina-pink"
           >
-            {/* Soft background shape */}
-            <div className="absolute inset-0 bg-gradient-to-tr from-araina-pink/10 to-araina-blue/10 rounded-2xl filter blur-xl transform scale-95 -z-10" />
-
-            {/* Floating Container */}
-            <div className="animate-float">
-              <img
-                src="/assets/product/araina-product-placeholder.png"
-                alt="Araina Premium sanitary pad packaging placeholder design"
-                className="w-full h-auto object-contain rounded-2xl shadow-xl border border-araina-pink/5 hover:shadow-2xl transition-shadow duration-500"
-              />
-            </div>
-
-            {/* Premium tag overlay */}
-            <div className="absolute -bottom-6 -right-4 bg-araina-white border border-araina-pink/10 rounded-xl px-5 py-3 shadow-md backdrop-blur-sm flex items-center gap-2">
-              <span className="w-2.5 h-2.5 rounded-full bg-araina-pink animate-pulse" />
-              <span className="text-[10px] uppercase font-bold tracking-widest text-araina-black">
-                Araina Wellness
-              </span>
-            </div>
-          </motion.div>
-        </div>
+            Join the Women&apos;s Opportunity
+          </Link>
+        </motion.div>
       </div>
-    </section>
-  );
-};
+
+      <div className="relative mx-auto w-full max-w-[540px] lg:col-span-5 lg:max-w-none">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.96, rotate: 1 }}
+          animate={{ opacity: 1, scale: 1, rotate: 0 }}
+          transition={{ duration: 0.9, delay: 0.2 }}
+          className="relative"
+        >
+          <div className="absolute -inset-4 rounded-[2rem] bg-gradient-to-br from-araina-pink/15 via-transparent to-araina-blue/20 blur-2xl" />
+          <div className="relative aspect-[4/3] overflow-hidden rounded-[5rem_1.5rem_5rem_1.5rem] border border-white/80 bg-white/75 shadow-2xl shadow-araina-black/10">
+            <img
+              src="/assets/images/campaign/araina-products-yellow.jpg"
+              alt="Woman holding Araina product boxes"
+              className="absolute inset-0 h-full w-full rounded-[inherit] object-cover object-[center_42%]"
+            />
+            <div className="absolute bottom-5 left-5 flex items-center gap-2 rounded-full border border-white/60 bg-white/90 px-4 py-2 text-[9px] font-bold uppercase tracking-[0.16em] text-araina-black/70 shadow-sm backdrop-blur">
+              <HeartHandshake size={15} className="text-araina-pink" />
+              Care · Awareness · Opportunity
+            </div>
+          </div>
+          <div className="absolute -right-2 top-1/2 hidden h-24 w-24 -translate-y-1/2 items-center justify-center rounded-full border-[6px] border-white bg-araina-blue text-center text-[9px] font-bold uppercase leading-4 tracking-widest text-white shadow-xl sm:flex lg:-right-6">
+            Made for<br />her
+          </div>
+        </motion.div>
+      </div>
+    </div>
+  </section>
+);
 
 export default Hero;
