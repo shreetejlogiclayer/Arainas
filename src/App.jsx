@@ -205,7 +205,7 @@ function App() {
       )}
 
       <main
-        className={`flex-grow ${showPublicLayout ? "public-page-background" : ""}`}
+        className={`min-w-0 w-full flex-grow ${showPublicLayout ? "public-page-background" : ""}`}
       >
         <AppErrorBoundary key={location.pathname}>
         <Routes>

@@ -265,7 +265,7 @@ const ContactPage = () => {
                 <h4 className="text-xs uppercase font-bold tracking-widest text-araina-black mb-4">
                   Follow Our Social Channels
                 </h4>
-                <div className="flex items-center gap-4">
+                <div className="flex flex-wrap items-center gap-2 sm:gap-4">
                   {SOCIAL_LINKS.instagram ? (
                     <a
                       href={SOCIAL_LINKS.instagram}

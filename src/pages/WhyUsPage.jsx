@@ -5,6 +5,7 @@ import {
   Check,
   HeartPulse,
   House,
+  ShieldCheck,
   Sparkles,
   TrendingUp,
   UsersRound,

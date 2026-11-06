@@ -479,7 +479,7 @@ const AboutPage = () => {
           </div>
 
           <div className="mt-16 grid gap-6 lg:grid-cols-2">
-            <article className="rounded-3xl border border-araina-blue/15 bg-white/90 p-7 sm:p-9">
+            <article className="min-w-0 max-w-full rounded-3xl border border-araina-blue/15 bg-white/90 p-5 sm:p-9">
               <span className="text-[10px] uppercase font-bold tracking-[0.25em] text-araina-blue">
                 Our Philosophy · Empowering To Rise
               </span>
@@ -497,7 +497,7 @@ const AboutPage = () => {
                 When one woman rises, she should not have to rise alone.
               </p>
             </article>
-            <article className="rounded-3xl border border-araina-pink/15 bg-gradient-to-br from-araina-pink/[0.06] via-white to-araina-blue/[0.08] p-7 sm:p-9">
+            <article className="min-w-0 max-w-full rounded-3xl border border-araina-pink/15 bg-gradient-to-br from-araina-pink/[0.06] via-white to-araina-blue/[0.08] p-5 sm:p-9">
               <span className="text-[10px] uppercase font-bold tracking-[0.25em] text-araina-pink">
                 Our Long-Term Direction
               </span>

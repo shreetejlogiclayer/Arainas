@@ -44,20 +44,31 @@ const inputClass =
   "w-full min-w-0 rounded-xl border border-araina-pink/20 bg-white px-4 py-3 text-sm outline-none transition placeholder:text-araina-black/35 focus:border-araina-pink focus:ring-4 focus:ring-araina-pink/10";
 
 const escapeHtml = (value) =>
-  String(value ?? "").replace(/[&<>"']/g, (character) => ({
-    "&": "&amp;",
-    "<": "&lt;",
-    ">": "&gt;",
-    '"': "&quot;",
-    "'": "&#39;",
-  })[character]);
+  String(value ?? "").replace(
+    /[&<>"']/g,
+    (character) =>
+      ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#39;",
+      })[character],
+  );
 
-const getAddressLines = (address = {}) => [
-  [address.houseNumber, address.building, address.street].filter(Boolean).join(", "),
-  [address.area, address.landmark, address.village].filter(Boolean).join(", "),
-  [address.city, address.district, address.state, address.pinCode].filter(Boolean).join(", "),
-  address.country || "India",
-].filter(Boolean);
+const getAddressLines = (address = {}) =>
+  [
+    [address.houseNumber, address.building, address.street]
+      .filter(Boolean)
+      .join(", "),
+    [address.area, address.landmark, address.village]
+      .filter(Boolean)
+      .join(", "),
+    [address.city, address.district, address.state, address.pinCode]
+      .filter(Boolean)
+      .join(", "),
+    address.country || "India",
+  ].filter(Boolean);
 
 const getPaymentStatusLabel = (status) => {
   if (status === "success") return "Payment successful";
@@ -70,18 +81,23 @@ const getInvoiceHtml = (order) => {
   const item = order.items?.[0] || {};
   const recipient = order.recipient || {};
   const address = recipient.address || {};
-  const addressHtml = getAddressLines({ ...address, country: recipient.country })
+  const addressHtml = getAddressLines({
+    ...address,
+    country: recipient.country,
+  })
     .map((line) => `<div>${escapeHtml(line)}</div>`)
     .join("");
   const paymentStatus = getPaymentStatusLabel(order.paymentStatus);
-  const paymentDetails = order.payment?.status === "success"
-    ? `<div class="status"><strong>Payment method:</strong> ${escapeHtml(order.payment.provider === "payu" ? "PayU" : order.payment.provider)} · <strong>Payment reference:</strong> ${escapeHtml(order.payment.transactionId || "Not available")} · <strong>Paid:</strong> ${escapeHtml(formatDateTime(order.payment.paidAt))}</div>`
-    : "";
-  const paymentFooter = order.paymentStatus === "success"
-    ? "This receipt confirms your order and verified payment."
-    : order.paymentStatus === "not_configured"
-      ? "This receipt confirms your order; online payment collection is not enabled."
-      : "This receipt confirms your order; payment confirmation is pending.";
+  const paymentDetails =
+    order.payment?.status === "success"
+      ? `<div class="status"><strong>Payment method:</strong> ${escapeHtml(order.payment.provider === "payu" ? "PayU" : order.payment.provider)} · <strong>Payment reference:</strong> ${escapeHtml(order.payment.transactionId || "Not available")} · <strong>Paid:</strong> ${escapeHtml(formatDateTime(order.payment.paidAt))}</div>`
+      : "";
+  const paymentFooter =
+    order.paymentStatus === "success"
+      ? "This receipt confirms your order and verified payment."
+      : order.paymentStatus === "not_configured"
+        ? "This receipt confirms your order; online payment collection is not enabled."
+        : "This receipt confirms your order; payment confirmation is pending.";
 
   return `<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
@@ -99,7 +115,7 @@ table{width:100%;border-collapse:collapse;margin:16px 0 24px}th{text-align:left;
 </style></head><body><main class="sheet">
 <header class="top"><div><img class="brand-logo" src="/assets/logo/araina-logo-dark.png" alt="ARAINA — Empowering To Rise"><p><strong>${escapeHtml(COMPANY_INFO.name)}</strong><br><span class="muted">${escapeHtml(COMPANY_INFO.address)}<br>${escapeHtml(COMPANY_INFO.phone)}</span></p></div><div class="right"><div class="title">ORDER RECEIPT</div><div class="number">#${escapeHtml(order.orderNumber)}</div><div class="muted">${escapeHtml(formatDateTime(order.createdAt))}</div></div></header>
 <section class="people"><div class="card"><p class="label">Ordered by</p><div class="person">${escapeHtml(order.orderedByName)}</div><div class="info">${escapeHtml(formatPhone(order.orderedByMobile || ""))}</div></div><div class="card"><p class="label">Ordered for · ${order.recipientType === "other" ? "Someone else" : "Myself"}</p><div class="person">${escapeHtml(recipient.name || order.deliveryRecipientName)}</div><div class="info">${escapeHtml(formatPhone(recipient.mobile || ""))}${recipient.alternateMobile ? ` · Alt: ${escapeHtml(formatPhone(recipient.alternateMobile))}` : ""}</div><div class="info">${addressHtml}</div></div></section>
-<p class="label">Order details</p><table><thead><tr><th>Product</th><th>Maga Boxes</th><th>Rate / Maga Box</th><th>Amount</th></tr></thead><tbody><tr><td><strong>${escapeHtml(item.product || "Araina Sanitary Pads")}</strong></td><td>${escapeHtml(item.boxes)}</td><td>${escapeHtml(formatCurrency(item.pricePerBox || 0))}</td><td>${escapeHtml(formatCurrency(item.subtotal || 0))}</td></tr></tbody></table>
+<p class="label">Order details</p><table><thead><tr><th>Product</th><th>Mega Boxes</th><th>Rate / Mega Box</th><th>Amount</th></tr></thead><tbody><tr><td><strong>${escapeHtml(item.product || "Araina Sanitary Pads")}</strong></td><td>${escapeHtml(item.boxes)}</td><td>${escapeHtml(formatCurrency(item.pricePerBox || 0))}</td><td>${escapeHtml(formatCurrency(item.subtotal || 0))}</td></tr></tbody></table>
 <div class="total"><div class="sum"><span>Subtotal</span><strong>${escapeHtml(formatCurrency(order.subtotal))}</strong></div>${order.discount ? `<div class="sum"><span>Coupon discount</span><strong>−${escapeHtml(formatCurrency(order.discount))}</strong></div>` : ""}<div class="sum grand"><span>Total</span><span>${escapeHtml(formatCurrency(order.total))}</span></div></div>
 <div class="status"><strong>Order status:</strong> ${escapeHtml(order.orderStatus)} · <strong>Payment:</strong> ${escapeHtml(paymentStatus)}</div>
 ${paymentDetails}
@@ -148,8 +164,12 @@ const OrdersPage = () => {
   const selectedTier = product?.quantities.find(
     (item) => item.boxes === Number(selectedBoxes),
   );
-  const subtotal = selectedTier ? selectedTier.boxes * selectedTier.pricePerBox : 0;
-  const selectedCoupon = coupons.find((coupon) => coupon.id === selectedCouponId);
+  const subtotal = selectedTier
+    ? selectedTier.boxes * selectedTier.pricePerBox
+    : 0;
+  const selectedCoupon = coupons.find(
+    (coupon) => coupon.id === selectedCouponId,
+  );
   const discount = selectedCoupon
     ? Math.min(
         subtotal,
@@ -159,11 +179,16 @@ const OrdersPage = () => {
       )
     : 0;
   const total = subtotal - discount;
-  const orderRecipientType =
-    deliveryMethod === "hand" ? "self" : recipientType;
+  const orderRecipientType = deliveryMethod === "hand" ? "self" : recipientType;
 
   const loadOrderData = useCallback(async () => {
-    const [account, availableProducts, orderHistory, availableCoupons, paymentOptions] = await Promise.all([
+    const [
+      account,
+      availableProducts,
+      orderHistory,
+      availableCoupons,
+      paymentOptions,
+    ] = await Promise.all([
       requestPortalJson("/api/auth/me"),
       requestPortalJson("/api/orders/catalog"),
       requestPortalJson("/api/orders"),
@@ -178,7 +203,9 @@ const OrdersPage = () => {
       !paymentOptions ||
       typeof paymentOptions !== "object"
     ) {
-      throw new Error("We couldn’t load your order information. Please refresh and try again.");
+      throw new Error(
+        "We couldn’t load your order information. Please refresh and try again.",
+      );
     }
     setUser(account);
     setCatalog(availableProducts);
@@ -194,7 +221,9 @@ const OrdersPage = () => {
       );
       if (verifiedOrder) {
         setReceiptOrder(verifiedOrder);
-        setPaymentFeedback("Your payment is confirmed and your order is complete.");
+        setPaymentFeedback(
+          "Your payment is confirmed and your order is complete.",
+        );
       } else {
         setPaymentFeedback(
           "We’re still confirming your payment. Your order will appear here once it’s verified. Please don’t pay again yet.",
@@ -295,7 +324,10 @@ const OrdersPage = () => {
         mobile: user?.mobile || "",
         alternateMobile: user?.profile?.alternateMobile || "",
         address: Object.fromEntries(
-          Object.keys(blankRecipient.address).map((key) => [key, address[key] || ""]),
+          Object.keys(blankRecipient.address).map((key) => [
+            key,
+            address[key] || "",
+          ]),
         ),
       });
     } else {
@@ -316,7 +348,8 @@ const OrdersPage = () => {
       ...current,
       address: {
         ...current.address,
-        [name]: name === "pinCode" ? value.replace(/\D/g, "").slice(0, 6) : value,
+        [name]:
+          name === "pinCode" ? value.replace(/\D/g, "").slice(0, 6) : value,
       },
     }));
     setFieldErrors((current) => ({ ...current, [name]: "" }));
@@ -329,21 +362,29 @@ const OrdersPage = () => {
       if (!user?.profile?.fullName?.trim()) {
         issues.self = "Complete your profile before placing an order.";
       }
-      if (!user?.mobile) issues.self = "Your account mobile number is unavailable.";
+      if (!user?.mobile)
+        issues.self = "Your account mobile number is unavailable.";
       if (!user?.address) {
-        issues.self = deliveryMethod === "hand"
-          ? "Add a delivery address to your profile before placing a hand-delivered order."
-          : "Add a delivery address to your profile, or choose “Someone else”.";
+        issues.self =
+          deliveryMethod === "hand"
+            ? "Add a delivery address to your profile before placing a hand-delivered order."
+            : "Add a delivery address to your profile, or choose “Someone else”.";
       }
       setFieldErrors(issues);
       return Object.keys(issues).length === 0;
     }
 
     const issues = {};
-    if (recipient.fullName.trim().length < 2) issues.fullName = "Enter the recipient's full name.";
-    if (!isValidIndianPhone(recipient.mobile)) issues.mobile = "Enter a valid 10-digit mobile number.";
-    if (recipient.alternateMobile && !isValidIndianPhone(recipient.alternateMobile)) {
-      issues.alternateMobile = "Enter a valid 10-digit alternate mobile number.";
+    if (recipient.fullName.trim().length < 2)
+      issues.fullName = "Enter the recipient's full name.";
+    if (!isValidIndianPhone(recipient.mobile))
+      issues.mobile = "Enter a valid 10-digit mobile number.";
+    if (
+      recipient.alternateMobile &&
+      !isValidIndianPhone(recipient.alternateMobile)
+    ) {
+      issues.alternateMobile =
+        "Enter a valid 10-digit alternate mobile number.";
     }
     for (const [field, label] of [
       ["houseNumber", "House / flat number"],
@@ -353,7 +394,8 @@ const OrdersPage = () => {
       ["district", "District"],
       ["state", "State"],
     ]) {
-      if (!recipient.address[field].trim()) issues[field] = `${label} is required.`;
+      if (!recipient.address[field].trim())
+        issues[field] = `${label} is required.`;
     }
     if (!isValidPIN(recipient.address.pinCode)) {
       issues.pinCode = "Enter a valid 6-digit PIN code.";
@@ -433,7 +475,9 @@ const OrdersPage = () => {
       }
       setPlacedOrder(order);
       setOrders((current) => [order, ...current]);
-      setCoupons((current) => current.filter((coupon) => coupon.id !== selectedCouponId));
+      setCoupons((current) =>
+        current.filter((coupon) => coupon.id !== selectedCouponId),
+      );
       setSelectedCouponId("");
       setActiveTab("order-history");
     } catch (submitError) {
@@ -448,21 +492,25 @@ const OrdersPage = () => {
     }
   };
 
-  const orderedByName = user?.profile?.fullName?.trim() || "Profile name required";
-  const orderedByMobile = user?.mobile ? formatPhone(user.mobile) : "Mobile unavailable";
-  const recipientPreview = orderRecipientType === "self"
-    ? {
-        name: user?.profile?.fullName,
-        mobile: user?.mobile,
-        alternateMobile: user?.profile?.alternateMobile,
-        address: user?.address,
-      }
-    : {
-        name: recipient.fullName,
-        mobile: recipient.mobile,
-        alternateMobile: recipient.alternateMobile,
-        address: recipient.address,
-      };
+  const orderedByName =
+    user?.profile?.fullName?.trim() || "Profile name required";
+  const orderedByMobile = user?.mobile
+    ? formatPhone(user.mobile)
+    : "Mobile unavailable";
+  const recipientPreview =
+    orderRecipientType === "self"
+      ? {
+          name: user?.profile?.fullName,
+          mobile: user?.mobile,
+          alternateMobile: user?.profile?.alternateMobile,
+          address: user?.address,
+        }
+      : {
+          name: recipient.fullName,
+          mobile: recipient.mobile,
+          alternateMobile: recipient.alternateMobile,
+          address: recipient.address,
+        };
 
   const downloadReceipt = (order) => {
     const invoiceWindow = window.open("", "_blank");
@@ -517,7 +565,10 @@ const OrdersPage = () => {
         </div>
 
         {error && (
-          <div role="alert" className="mt-5 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+          <div
+            role="alert"
+            className="mt-5 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700"
+          >
             {error}
             {error.toLowerCase().includes("profile") && (
               <button
@@ -576,7 +627,9 @@ const OrdersPage = () => {
                       <PackageCheck size={19} />
                     </span>
                     <div>
-                      <h2 className="font-semibold text-araina-black">Choose your product</h2>
+                      <h2 className="font-semibold text-araina-black">
+                        Choose your product
+                      </h2>
                       <p className="mt-1 text-xs text-araina-black/55">
                         Product name is fixed. Select an available quantity.
                       </p>
@@ -596,7 +649,8 @@ const OrdersPage = () => {
 
                   <fieldset className="mt-6">
                     <legend className="mb-3 text-xs font-semibold uppercase tracking-wider text-araina-black/75">
-                      Quantity · Maga Boxes <span className="text-araina-pink">*</span>
+                      Quantity · Mega Boxes{" "}
+                      <span className="text-araina-pink">*</span>
                     </legend>
                     <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
                       {product?.quantities.map((tier) => (
@@ -611,7 +665,8 @@ const OrdersPage = () => {
                           }`}
                         >
                           <span className="block text-lg font-bold text-araina-black sm:text-2xl">
-                            {tier.boxes} Maga {tier.boxes === 1 ? "Box" : "Boxes"}
+                            {tier.boxes} Mega{" "}
+                            {tier.boxes === 1 ? "Box" : "Boxes"}
                           </span>
                           <span className="mt-3 block text-[10px] text-araina-black/50 line-through">
                             MRP {formatCurrency(tier.mrp)}
@@ -637,9 +692,12 @@ const OrdersPage = () => {
                       <UserRound size={19} />
                     </span>
                     <div>
-                      <h2 className="font-semibold text-araina-black">Order and delivery details</h2>
+                      <h2 className="font-semibold text-araina-black">
+                        Order and delivery details
+                      </h2>
                       <p className="mt-1 text-xs text-araina-black/55">
-                        The order is placed by you. Choose who should receive it.
+                        The order is placed by you. Choose who should receive
+                        it.
                       </p>
                     </div>
                   </div>
@@ -649,12 +707,17 @@ const OrdersPage = () => {
                       <p className="text-[10px] font-semibold uppercase tracking-widest text-araina-blue">
                         Ordered by · account holder
                       </p>
-                      <p className="mt-2 font-semibold text-araina-black">{orderedByName}</p>
-                      <p className="mt-1 text-sm text-araina-black/60">{orderedByMobile}</p>
+                      <p className="mt-2 font-semibold text-araina-black">
+                        {orderedByName}
+                      </p>
+                      <p className="mt-1 text-sm text-araina-black/60">
+                        {orderedByMobile}
+                      </p>
                     </div>
                     <div className="flex items-center rounded-xl border border-araina-blue/10 bg-araina-blue/[0.04] p-4">
                       <p className="text-xs leading-5 text-araina-black/60">
-                        The purchaser details come from your profile and are stored separately from delivery recipient details.
+                        The purchaser details come from your profile and are
+                        stored separately from delivery recipient details.
                       </p>
                     </div>
                   </div>
@@ -698,112 +761,185 @@ const OrdersPage = () => {
 
                   {deliveryMethod === "courier" && (
                     <>
-                  <fieldset className="mt-6">
-                    <legend className="mb-3 text-xs font-semibold uppercase tracking-wider text-araina-black/75">
-                      Who is this order for?
-                    </legend>
-                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                      {[
-                        ["self", "Myself", "Deliver to the name and saved address in my profile."],
-                        ["other", "Someone else", "Enter their recipient and delivery details."],
-                      ].map(([type, label, description]) => (
-                        <label
-                          key={type}
-                          className={`flex cursor-pointer gap-3 rounded-xl border-2 p-4 transition ${
-                            recipientType === type
-                              ? "border-araina-pink bg-araina-pink/[0.035]"
-                              : "border-araina-pink/10 hover:border-araina-pink/35"
-                          }`}
-                        >
-                          <input
-                            type="radio"
-                            name="recipientType"
-                            value={type}
-                            checked={recipientType === type}
-                            onChange={() => changeRecipientType(type)}
-                            className="mt-1 accent-araina-pink"
-                          />
-                          <span>
-                            <span className="block text-sm font-semibold text-araina-black">{label}</span>
-                            <span className="mt-1 block text-xs leading-5 text-araina-black/55">{description}</span>
-                          </span>
-                        </label>
-                      ))}
-                    </div>
-                  </fieldset>
-
-                  {fieldErrors.self && (
-                    <p role="alert" className="mt-4 rounded-lg bg-red-50 p-3 text-sm text-red-700">
-                      {fieldErrors.self}
-                      {user?.profile?.fullName && !user?.address && (
-                        <button
-                          type="button"
-                          onClick={() => window.location.assign("/portal/profile")}
-                          className="ml-2 font-semibold underline"
-                        >
-                          Add an address
-                        </button>
-                      )}
-                    </p>
-                  )}
-
-                  {recipientType === "other" && (
-                    <div className="mt-6 space-y-6">
-                      <div>
-                        <h3 className="text-sm font-semibold text-araina-black">Recipient information</h3>
-                        <p className="mt-1 text-xs text-araina-black/55">
-                          These details will be saved with this order only.
-                        </p>
-                        <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
+                      <fieldset className="mt-6">
+                        <legend className="mb-3 text-xs font-semibold uppercase tracking-wider text-araina-black/75">
+                          Who is this order for?
+                        </legend>
+                        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                           {[
-                            ["fullName", "Recipient full name", true, "text"],
-                            ["mobile", "Recipient mobile", true, "tel"],
-                            ["alternateMobile", "Alternate mobile", false, "tel"],
-                          ].map(([name, label, required, type]) => (
-                            <label key={name} className="min-w-0 text-xs font-semibold text-araina-black/75">
-                              {label}{required ? <span className="ml-1 text-araina-pink">*</span> : <span className="ml-2 font-normal text-araina-black/45">Optional</span>}
+                            [
+                              "self",
+                              "Myself",
+                              "Deliver to the name and saved address in my profile.",
+                            ],
+                            [
+                              "other",
+                              "Someone else",
+                              "Enter their recipient and delivery details.",
+                            ],
+                          ].map(([type, label, description]) => (
+                            <label
+                              key={type}
+                              className={`flex cursor-pointer gap-3 rounded-xl border-2 p-4 transition ${
+                                recipientType === type
+                                  ? "border-araina-pink bg-araina-pink/[0.035]"
+                                  : "border-araina-pink/10 hover:border-araina-pink/35"
+                              }`}
+                            >
                               <input
-                                className={`${inputClass} mt-2 ${fieldErrors[name] ? "border-red-300 bg-red-50" : ""}`}
-                                type={type}
-                                inputMode={type === "tel" ? "tel" : undefined}
-                                autoComplete={name === "fullName" ? "name" : "tel"}
-                                maxLength={name === "fullName" ? 255 : 20}
-                                required={required}
-                                value={recipient[name]}
-                                onChange={changeRecipientField}
-                                name={name}
-                                placeholder={label}
+                                type="radio"
+                                name="recipientType"
+                                value={type}
+                                checked={recipientType === type}
+                                onChange={() => changeRecipientType(type)}
+                                className="mt-1 accent-araina-pink"
                               />
-                              {fieldErrors[name] && <span className="mt-1 block font-normal text-red-600">{fieldErrors[name]}</span>}
+                              <span>
+                                <span className="block text-sm font-semibold text-araina-black">
+                                  {label}
+                                </span>
+                                <span className="mt-1 block text-xs leading-5 text-araina-black/55">
+                                  {description}
+                                </span>
+                              </span>
                             </label>
                           ))}
                         </div>
-                      </div>
+                      </fieldset>
 
-                      <div>
-                        <h3 className="text-sm font-semibold text-araina-black">Recipient delivery address</h3>
-                        <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                          {addressFieldSpecs.map(([name, label, required, maxLength]) => (
-                            <label key={name} className="min-w-0 text-xs font-semibold text-araina-black/75">
-                              {label}{required && <span className="ml-1 text-araina-pink">*</span>}
-                              <input
-                                className={`${inputClass} mt-2 ${fieldErrors[name] ? "border-red-300 bg-red-50" : ""}`}
-                                name={name}
-                                maxLength={maxLength}
-                                required={required}
-                                autoComplete={name === "pinCode" ? "postal-code" : undefined}
-                                inputMode={name === "pinCode" ? "numeric" : undefined}
-                                value={recipient.address[name]}
-                                onChange={changeRecipientAddress}
-                                placeholder={label}
-                              />
-                              {fieldErrors[name] && <span className="mt-1 block font-normal text-red-600">{fieldErrors[name]}</span>}
-                            </label>
-                          ))}
+                      {fieldErrors.self && (
+                        <p
+                          role="alert"
+                          className="mt-4 rounded-lg bg-red-50 p-3 text-sm text-red-700"
+                        >
+                          {fieldErrors.self}
+                          {user?.profile?.fullName && !user?.address && (
+                            <button
+                              type="button"
+                              onClick={() =>
+                                window.location.assign("/portal/profile")
+                              }
+                              className="ml-2 font-semibold underline"
+                            >
+                              Add an address
+                            </button>
+                          )}
+                        </p>
+                      )}
+
+                      {recipientType === "other" && (
+                        <div className="mt-6 space-y-6">
+                          <div>
+                            <h3 className="text-sm font-semibold text-araina-black">
+                              Recipient information
+                            </h3>
+                            <p className="mt-1 text-xs text-araina-black/55">
+                              These details will be saved with this order only.
+                            </p>
+                            <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
+                              {[
+                                [
+                                  "fullName",
+                                  "Recipient full name",
+                                  true,
+                                  "text",
+                                ],
+                                ["mobile", "Recipient mobile", true, "tel"],
+                                [
+                                  "alternateMobile",
+                                  "Alternate mobile",
+                                  false,
+                                  "tel",
+                                ],
+                              ].map(([name, label, required, type]) => (
+                                <label
+                                  key={name}
+                                  className="min-w-0 text-xs font-semibold text-araina-black/75"
+                                >
+                                  {label}
+                                  {required ? (
+                                    <span className="ml-1 text-araina-pink">
+                                      *
+                                    </span>
+                                  ) : (
+                                    <span className="ml-2 font-normal text-araina-black/45">
+                                      Optional
+                                    </span>
+                                  )}
+                                  <input
+                                    className={`${inputClass} mt-2 ${fieldErrors[name] ? "border-red-300 bg-red-50" : ""}`}
+                                    type={type}
+                                    inputMode={
+                                      type === "tel" ? "tel" : undefined
+                                    }
+                                    autoComplete={
+                                      name === "fullName" ? "name" : "tel"
+                                    }
+                                    maxLength={name === "fullName" ? 255 : 20}
+                                    required={required}
+                                    value={recipient[name]}
+                                    onChange={changeRecipientField}
+                                    name={name}
+                                    placeholder={label}
+                                  />
+                                  {fieldErrors[name] && (
+                                    <span className="mt-1 block font-normal text-red-600">
+                                      {fieldErrors[name]}
+                                    </span>
+                                  )}
+                                </label>
+                              ))}
+                            </div>
+                          </div>
+
+                          <div>
+                            <h3 className="text-sm font-semibold text-araina-black">
+                              Recipient delivery address
+                            </h3>
+                            <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                              {addressFieldSpecs.map(
+                                ([name, label, required, maxLength]) => (
+                                  <label
+                                    key={name}
+                                    className="min-w-0 text-xs font-semibold text-araina-black/75"
+                                  >
+                                    {label}
+                                    {required && (
+                                      <span className="ml-1 text-araina-pink">
+                                        *
+                                      </span>
+                                    )}
+                                    <input
+                                      className={`${inputClass} mt-2 ${fieldErrors[name] ? "border-red-300 bg-red-50" : ""}`}
+                                      name={name}
+                                      maxLength={maxLength}
+                                      required={required}
+                                      autoComplete={
+                                        name === "pinCode"
+                                          ? "postal-code"
+                                          : undefined
+                                      }
+                                      inputMode={
+                                        name === "pinCode"
+                                          ? "numeric"
+                                          : undefined
+                                      }
+                                      value={recipient.address[name]}
+                                      onChange={changeRecipientAddress}
+                                      placeholder={label}
+                                    />
+                                    {fieldErrors[name] && (
+                                      <span className="mt-1 block font-normal text-red-600">
+                                        {fieldErrors[name]}
+                                      </span>
+                                    )}
+                                  </label>
+                                ),
+                              )}
+                            </div>
+                          </div>
                         </div>
-                      </div>
-                    </div>
-                  )}
+                      )}
                     </>
                   )}
                 </section>
@@ -816,16 +952,24 @@ const OrdersPage = () => {
                     <div className="space-y-3 text-sm">
                       <p className="flex justify-between gap-4">
                         <span className="text-araina-black/60">Product</span>
-                        <span className="text-right font-medium">{product?.name || "—"}</span>
+                        <span className="text-right font-medium">
+                          {product?.name || "—"}
+                        </span>
                       </p>
                       <p className="flex justify-between gap-4">
                         <span className="text-araina-black/60">Quantity</span>
-                        <span className="text-right font-medium">{selectedTier ? `${selectedTier.boxes} Maga ${selectedTier.boxes === 1 ? "Box" : "Boxes"}` : "Select quantity"}</span>
+                        <span className="text-right font-medium">
+                          {selectedTier
+                            ? `${selectedTier.boxes} Mega ${selectedTier.boxes === 1 ? "Box" : "Boxes"}`
+                            : "Select quantity"}
+                        </span>
                       </p>
                     </div>
                     <div className="rounded-xl border border-araina-pink/10 bg-white/80 p-4">
                       <p className="text-[10px] font-semibold uppercase tracking-widest text-araina-pink">
-                        {recipientType === "self" ? "Delivering to you" : "Delivering to"}
+                        {recipientType === "self"
+                          ? "Delivering to you"
+                          : "Delivering to"}
                       </p>
                       <p className="mt-2 text-sm font-semibold text-araina-black">
                         {recipientPreview.name || "Recipient name"}
@@ -840,7 +984,9 @@ const OrdersPage = () => {
                       </p>
                       <div className="mt-2 flex gap-2 text-xs leading-5 text-araina-black/55">
                         <MapPin size={14} className="mt-0.5 shrink-0" />
-                        <span>{currentAddressLines.join(", ") || "Delivery address"}</span>
+                        <span>
+                          {currentAddressLines.join(", ") || "Delivery address"}
+                        </span>
                       </div>
                     </div>
                   </div>
@@ -850,7 +996,9 @@ const OrdersPage = () => {
                         role="note"
                         className="rounded-xl border border-araina-blue/20 bg-araina-blue/[0.05] p-3 text-xs leading-5 text-araina-black/75"
                       >
-                        <p className="font-semibold text-araina-blue">Additional courier charges</p>
+                        <p className="font-semibold text-araina-blue">
+                          Additional courier charges
+                        </p>
                         <p className="mt-1">
                           Pay the courier charges directly to the courier upon
                           delivery. These charges are not included in the order
@@ -863,7 +1011,9 @@ const OrdersPage = () => {
                         Apply a coupon
                         <select
                           value={selectedCouponId}
-                          onChange={(event) => setSelectedCouponId(event.target.value)}
+                          onChange={(event) =>
+                            setSelectedCouponId(event.target.value)
+                          }
                           className={`${inputClass} mt-2`}
                         >
                           <option value="">No coupon</option>
@@ -880,24 +1030,31 @@ const OrdersPage = () => {
                     {paymentConfig.enabled && (
                       <label className="block text-xs font-semibold text-araina-black/75">
                         Email for payment receipt
-                        <span className="ml-1 text-araina-pink">*</span>
+                        <span className="ml-2 font-normal text-araina-black/45">
+                          Optional
+                        </span>
                         <input
                           className={`${inputClass} mt-2`}
                           type="email"
                           name="paymentEmail"
                           value={paymentEmail}
-                          onChange={(event) => setPaymentEmail(event.target.value)}
+                          onChange={(event) =>
+                            setPaymentEmail(event.target.value)
+                          }
                           autoComplete="email"
                           maxLength={255}
-                          required
                         />
                       </label>
                     )}
                     <p className="flex justify-between text-sm">
                       <span className="text-araina-black/60">
-                        Subtotal ({selectedTier?.boxes || 0} × {formatCurrency(selectedTier?.pricePerBox || 0)} per Maga Box)
+                        Subtotal ({selectedTier?.boxes || 0} ×{" "}
+                        {formatCurrency(selectedTier?.pricePerBox || 0)} per
+                        Mega Box)
                       </span>
-                      <span className="font-semibold">{formatCurrency(subtotal)}</span>
+                      <span className="font-semibold">
+                        {formatCurrency(subtotal)}
+                      </span>
                     </p>
                     {discount > 0 && (
                       <p className="flex justify-between text-sm text-green-700">
@@ -907,7 +1064,9 @@ const OrdersPage = () => {
                     )}
                     <p className="flex justify-between border-t border-araina-pink/15 pt-3">
                       <span className="font-bold">Total</span>
-                      <span className="text-xl font-bold text-araina-pink">{formatCurrency(total)}</span>
+                      <span className="text-xl font-bold text-araina-pink">
+                        {formatCurrency(total)}
+                      </span>
                     </p>
                     <p className="text-xs text-araina-black/50">
                       {paymentConfig.enabled
@@ -942,22 +1101,22 @@ const OrdersPage = () => {
                   </div>
                   <button
                     type="submit"
-                    disabled={
-                      isSubmitting ||
-                        !selectedTier ||
-                      !catalog.length
-                    }
+                    disabled={isSubmitting || !selectedTier || !catalog.length}
                     className="group inline-flex min-h-14 w-full items-center justify-center gap-3 rounded-xl bg-gradient-to-r from-araina-pink to-[#e94f70] px-6 text-sm font-semibold uppercase tracking-[0.12em] text-white shadow-lg shadow-araina-pink/25 transition duration-200 hover:-translate-y-0.5 hover:shadow-xl hover:shadow-araina-pink/30 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-araina-pink/25 disabled:cursor-not-allowed disabled:translate-y-0 disabled:from-araina-pink/50 disabled:to-araina-pink/50 disabled:shadow-none sm:w-auto sm:min-w-64"
                   >
                     {isSubmitting ? (
                       <>
                         <LoaderCircle size={19} className="animate-spin" />
-                        {paymentConfig.enabled ? "Starting secure payment…" : "Placing order…"}
+                        {paymentConfig.enabled
+                          ? "Starting secure payment…"
+                          : "Placing order…"}
                       </>
                     ) : (
                       <>
                         <ShoppingBag size={18} />
-                        {paymentConfig.enabled ? "Continue to payment" : "Place order"}
+                        {paymentConfig.enabled
+                          ? "Continue to payment"
+                          : "Place order"}
                         <ArrowRight
                           size={18}
                           className="transition-transform group-hover:translate-x-1"
@@ -1036,7 +1195,7 @@ const OrdersPage = () => {
                         className="flex justify-between gap-4"
                       >
                         <span>
-                          {item.product} · {item.boxes} Maga{" "}
+                          {item.product} · {item.boxes} Mega{" "}
                           {item.boxes === 1 ? "Box" : "Boxes"}
                         </span>
                         <strong>{formatCurrency(item.subtotal)}</strong>
@@ -1059,7 +1218,10 @@ const OrdersPage = () => {
                       </span>
                     </div>
                     <p className="text-xs text-araina-black/60">
-                      Payment method: {receiptOrder.payment?.provider === "payu" ? "PayU" : receiptOrder.payment?.provider || "Online"}
+                      Payment method:{" "}
+                      {receiptOrder.payment?.provider === "payu"
+                        ? "PayU"
+                        : receiptOrder.payment?.provider || "Online"}
                     </p>
                     {receiptOrder.payment?.transactionId && (
                       <p className="break-all text-xs text-araina-black/60">
@@ -1088,8 +1250,12 @@ const OrdersPage = () => {
                 <div className="flex items-center gap-3">
                   <CheckCircle2 className="shrink-0 text-green-700" size={24} />
                   <div>
-                    <p className="font-semibold text-green-900">Order placed successfully</p>
-                    <p className="mt-1 text-sm text-green-800">Order #{placedOrder.orderNumber}</p>
+                    <p className="font-semibold text-green-900">
+                      Order placed successfully
+                    </p>
+                    <p className="mt-1 text-sm text-green-800">
+                      Order #{placedOrder.orderNumber}
+                    </p>
                   </div>
                 </div>
                 <button
@@ -1119,17 +1285,40 @@ const OrdersPage = () => {
                           {formatDateTime(order.createdAt)}
                         </p>
                         <p className="mt-4 font-semibold text-araina-black">
-                          {item?.product} · {item?.boxes} Maga {item?.boxes === 1 ? "Box" : "Boxes"}
+                          {item?.product} · {item?.boxes} Mega{" "}
+                          {item?.boxes === 1 ? "Box" : "Boxes"}
                         </p>
                         <div className="mt-3 grid grid-cols-1 gap-x-8 gap-y-2 text-xs text-araina-black/60 sm:grid-cols-2">
-                          <p><strong>Ordered by:</strong> {order.orderedByName} · {order.orderedByMobile ? formatPhone(order.orderedByMobile) : ""}</p>
-                          <p><strong>Ordered for:</strong> {order.recipient?.name} · {order.recipient?.mobile ? formatPhone(order.recipient.mobile) : ""}</p>
-                          <p><strong>Delivery address:</strong> {getAddressLines({ ...order.recipient?.address, country: order.recipient?.country }).join(", ")}</p>
-                          <p><strong>Status:</strong> {order.orderStatus} · {getPaymentStatusLabel(order.paymentStatus)}</p>
+                          <p>
+                            <strong>Ordered by:</strong> {order.orderedByName} ·{" "}
+                            {order.orderedByMobile
+                              ? formatPhone(order.orderedByMobile)
+                              : ""}
+                          </p>
+                          <p>
+                            <strong>Ordered for:</strong>{" "}
+                            {order.recipient?.name} ·{" "}
+                            {order.recipient?.mobile
+                              ? formatPhone(order.recipient.mobile)
+                              : ""}
+                          </p>
+                          <p>
+                            <strong>Delivery address:</strong>{" "}
+                            {getAddressLines({
+                              ...order.recipient?.address,
+                              country: order.recipient?.country,
+                            }).join(", ")}
+                          </p>
+                          <p>
+                            <strong>Status:</strong> {order.orderStatus} ·{" "}
+                            {getPaymentStatusLabel(order.paymentStatus)}
+                          </p>
                         </div>
                       </div>
                       <div className="flex items-center justify-between gap-4 sm:flex-col sm:items-end">
-                        <p className="text-xl font-bold text-araina-pink">{formatCurrency(order.total)}</p>
+                        <p className="text-xl font-bold text-araina-pink">
+                          {formatCurrency(order.total)}
+                        </p>
                         <button
                           type="button"
                           onClick={() => downloadReceipt(order)}
@@ -1144,9 +1333,16 @@ const OrdersPage = () => {
               })
             ) : (
               <div className="rounded-2xl border border-araina-pink/10 bg-white p-8 text-center">
-                <PackageCheck className="mx-auto text-araina-pink/60" size={32} />
-                <p className="mt-3 font-semibold text-araina-black">No orders yet</p>
-                <p className="mt-1 text-sm text-araina-black/55">Your placed orders will appear here.</p>
+                <PackageCheck
+                  className="mx-auto text-araina-pink/60"
+                  size={32}
+                />
+                <p className="mt-3 font-semibold text-araina-black">
+                  No orders yet
+                </p>
+                <p className="mt-1 text-sm text-araina-black/55">
+                  Your placed orders will appear here.
+                </p>
                 <button
                   type="button"
                   onClick={() => setActiveTab("place-order")}

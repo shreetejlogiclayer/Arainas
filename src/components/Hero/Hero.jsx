@@ -11,13 +11,13 @@ const Hero = () => (
     <div className="pointer-events-none absolute -left-20 top-1/4 h-80 w-80 rounded-full bg-araina-pink/5 blur-3xl" />
     <div className="pointer-events-none absolute -bottom-16 right-0 h-96 w-96 rounded-full bg-araina-blue/10 blur-3xl" />
 
-    <div className="relative z-10 mx-auto grid w-full max-w-7xl items-center gap-12 px-6 lg:grid-cols-12 lg:gap-10">
-      <div className="flex flex-col items-center text-center lg:col-span-7 lg:items-start lg:text-left">
+    <div className="relative z-10 mx-auto grid w-full max-w-7xl grid-cols-1 items-center gap-12 px-5 sm:px-6 lg:grid-cols-12 lg:gap-10">
+      <div className="flex min-w-0 flex-col items-center text-center lg:col-span-7 lg:items-start lg:text-left">
         <motion.span
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7 }}
-          className="mb-5 inline-flex rounded-full border border-araina-pink/15 bg-white/80 px-4 py-2 text-[10px] font-bold uppercase tracking-[0.2em] text-araina-pink shadow-sm"
+          className="mb-5 inline-flex max-w-full justify-center rounded-full border border-araina-pink/15 bg-white/80 px-3 py-2 text-center text-[10px] font-bold uppercase tracking-[0.12em] text-araina-pink shadow-sm sm:px-4 sm:tracking-[0.2em]"
         >
           Women&apos;s health · Confidence · Opportunity
         </motion.span>
@@ -25,7 +25,7 @@ const Hero = () => (
           initial={{ opacity: 0, y: 25 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.1 }}
-          className="mb-6 text-5xl font-extrabold leading-[1.05] tracking-tight text-araina-black sm:text-6xl lg:text-7xl"
+          className="mb-6 max-w-full text-[clamp(1.5rem,10vw,3rem)] font-extrabold leading-[1.05] tracking-tight text-araina-black sm:text-6xl lg:text-7xl"
         >
           Empowering
           <br />
@@ -59,24 +59,24 @@ const Hero = () => (
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7, delay: 0.35 }}
-          className="mt-8 flex w-full flex-col gap-3 sm:w-auto sm:flex-row"
+          className="mt-8 flex w-full max-w-full flex-col gap-3 sm:w-auto sm:flex-row"
         >
           <Link
             to="/araina"
-            className="inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-araina-pink px-7 py-3 text-[10px] font-bold uppercase tracking-[0.16em] text-white shadow-lg shadow-araina-pink/20 transition hover:-translate-y-0.5 hover:bg-araina-pink/90"
+            className="inline-flex min-h-12 min-w-0 items-center justify-center gap-2 rounded-full bg-araina-pink px-5 py-3 text-center text-[10px] font-bold uppercase tracking-[0.1em] text-white shadow-lg shadow-araina-pink/20 transition hover:-translate-y-0.5 hover:bg-araina-pink/90 sm:px-7 sm:tracking-[0.16em]"
           >
             Know Araina <ArrowRight size={14} />
           </Link>
           <Link
             to="/opportunity"
-            className="inline-flex min-h-12 items-center justify-center gap-2 rounded-full border border-araina-black/15 bg-white/70 px-7 py-3 text-[10px] font-bold uppercase tracking-[0.16em] text-araina-black transition hover:border-araina-pink hover:text-araina-pink"
+            className="inline-flex min-h-12 min-w-0 items-center justify-center gap-2 rounded-full border border-araina-black/15 bg-white/70 px-5 py-3 text-center text-[10px] font-bold uppercase tracking-[0.1em] text-araina-black transition hover:border-araina-pink hover:text-araina-pink sm:px-7 sm:tracking-[0.16em]"
           >
             Join the Women&apos;s Opportunity
           </Link>
         </motion.div>
       </div>
 
-      <div className="relative mx-auto w-full max-w-[540px] lg:col-span-5 lg:max-w-none">
+      <div className="relative mx-auto w-full min-w-0 max-w-[540px] lg:col-span-5 lg:max-w-none">
         <motion.div
           initial={{ opacity: 0, scale: 0.96, rotate: 1 }}
           animate={{ opacity: 1, scale: 1, rotate: 0 }}

@@ -192,7 +192,7 @@ const Navbar = ({ activeSection, setActiveSection }) => {
             : "bg-transparent py-3"
         }`}
       >
-        <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 flex items-center justify-between">
+        <div className="mx-auto flex w-full max-w-7xl items-center justify-between gap-1 px-2 sm:gap-3 sm:px-6 lg:px-8">
           {/* ==================== LOGO ==================== */}
           <Link
             to="/"
@@ -247,7 +247,7 @@ const Navbar = ({ activeSection, setActiveSection }) => {
           </nav>
 
           {/* ==================== DESKTOP JOIN CTA ==================== */}
-          {/* <div className="hidden xl:block flex-shrink-0">
+          <div className="hidden xl:block flex-shrink-0">
             <button
               onClick={handleJoinUsClick}
               className="
@@ -271,15 +271,17 @@ const Navbar = ({ activeSection, setActiveSection }) => {
             >
               Become a Member
             </button>
-          </div> */}
+          </div>
 
           {/* ==================== MOBILE JOIN CTA ==================== */}
-          {/* <button
+          <button
             onClick={handleJoinUsClick}
-            className="araina-heartbeat xl:hidden mr-1 whitespace-nowrap rounded-full bg-araina-pink px-3 py-2 text-[10px] font-semibold uppercase tracking-wide text-araina-white shadow-md shadow-araina-pink/20 transition-all duration-300 hover:bg-araina-pink/90 hover:shadow-lg sm:px-4 sm:text-xs"
+            aria-label="Become a Member"
+            className="araina-heartbeat xl:hidden mr-1 flex-shrink-0 whitespace-nowrap rounded-full bg-araina-pink px-2 py-2 text-[9px] font-semibold uppercase tracking-wide text-araina-white shadow-md shadow-araina-pink/20 transition-all duration-300 hover:bg-araina-pink/90 hover:shadow-lg min-[360px]:px-3 min-[360px]:text-[10px] sm:px-4 sm:text-xs"
           >
-            Become a Member
-          </button> */}
+            <span className="min-[360px]:hidden">Join</span>
+            <span className="hidden min-[360px]:inline">Become a Member</span>
+          </button>
 
           {/* ==================== MOBILE MENU TOGGLE ==================== */}
           <button
@@ -295,13 +297,13 @@ const Navbar = ({ activeSection, setActiveSection }) => {
 
       {/* ==================== MOBILE DRAWER ==================== */}
       <div
-        className={`fixed inset-0 z-40 bg-araina-white transition-all duration-500 xl:hidden flex flex-col justify-center px-8 ${
+        className={`fixed inset-0 z-40 overflow-y-auto bg-araina-white px-6 py-24 transition-all duration-500 xl:hidden flex flex-col justify-center sm:px-8 ${
           isOpen
             ? "opacity-100 pointer-events-auto translate-x-0"
             : "opacity-0 pointer-events-none translate-x-full"
         }`}
       >
-        <div className="flex flex-col gap-6 text-center">
+        <div className="flex flex-col gap-5 text-center sm:gap-6">
           {menuItems.map((item, idx) => {
             const active = isItemActive(item);
 
@@ -312,7 +314,7 @@ const Navbar = ({ activeSection, setActiveSection }) => {
                 style={{
                   transitionDelay: isOpen ? `${idx * 50}ms` : "0ms",
                 }}
-                className={`text-lg uppercase tracking-widest font-semibold transition-all duration-300 ${
+                className={`text-base leading-snug uppercase tracking-[0.12em] font-semibold transition-all duration-300 sm:text-lg sm:tracking-widest ${
                   active
                     ? "text-araina-pink scale-105"
                     : "text-araina-black/80 hover:text-araina-pink"

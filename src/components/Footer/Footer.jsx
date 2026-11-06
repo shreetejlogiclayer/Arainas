@@ -140,17 +140,17 @@ const Footer = () => {
             </p>
 
             <div className="space-y-2 text-xs text-araina-white/70 font-light">
-              <p className="flex items-center gap-2">
+              <p className="flex min-w-0 items-start gap-2">
                 <Mail size={13} className="text-araina-pink" />
-                <span>{COMPANY_INFO.email}</span>
+                <span className="break-all">{COMPANY_INFO.email}</span>
               </p>
-              <p className="flex items-center gap-2">
+              <p className="flex min-w-0 items-start gap-2">
                 <Phone size={13} className="text-araina-blue" />
-                <span>{COMPANY_INFO.phone}</span>
+                <span className="break-all">{COMPANY_INFO.phone}</span>
               </p>
-              <p className="flex items-center gap-2">
+              <p className="flex min-w-0 items-start gap-2">
                 <MapPin size={13} className="text-araina-pink" />
-                <span>{COMPANY_INFO.address}</span>
+                <span className="break-words">{COMPANY_INFO.address}</span>
               </p>
             </div>
           </div>

@@ -13,7 +13,7 @@
  *    Format: { boxes: NUMBER, pricePerBox: PRICE_IN_RUPEES }
  *    Example: { boxes: 50, pricePerBox: 500 }
  *
- * Quantity pricing matches the current Maga Box rate card.
+ * Quantity pricing matches the current Mega Box rate card.
  * ========================================
  */
 

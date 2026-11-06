@@ -12,12 +12,12 @@ export const PublicPageHero = ({
   children,
 }) => (
   <section className="relative overflow-hidden border-b border-araina-pink/10 bg-gradient-to-tr from-araina-white via-araina-pink/5 to-araina-blue/5 pb-16 pt-36 butterfly-background sm:pb-20 sm:pt-40">
-    <div className={`relative z-10 mx-auto grid max-w-7xl items-center gap-10 px-6 ${image ? "lg:grid-cols-12 lg:gap-14" : ""}`}>
-      <div className={`${image ? "lg:col-span-7" : "mx-auto max-w-4xl text-center"} relative z-10`}>
-        <span className="mb-6 inline-flex rounded-full border border-araina-pink/15 bg-white/80 px-4 py-2 text-[10px] font-bold uppercase tracking-[0.22em] text-araina-pink shadow-sm">
+    <div className={`relative z-10 mx-auto grid min-w-0 max-w-7xl items-center gap-10 px-5 sm:px-6 ${image ? "grid-cols-1 lg:grid-cols-12 lg:gap-14" : ""}`}>
+      <div className={`${image ? "lg:col-span-7" : "mx-auto max-w-4xl text-center"} relative z-10 min-w-0`}>
+        <span className="mb-6 inline-flex max-w-full justify-center rounded-full border border-araina-pink/15 bg-white/80 px-3 py-2 text-center text-[10px] font-bold uppercase tracking-[0.12em] text-araina-pink shadow-sm sm:px-4 sm:tracking-[0.22em]">
           {eyebrow}
         </span>
-        <h1 className="mb-6 text-4xl font-extrabold leading-[1.12] tracking-tight text-araina-black sm:text-5xl lg:text-6xl">
+        <h1 className="mb-6 text-[clamp(1.75rem,9vw,2.25rem)] font-extrabold leading-[1.12] tracking-tight text-araina-black sm:text-5xl lg:text-6xl">
           {title}
         </h1>
         <p className="mx-auto max-w-2xl text-sm font-light leading-7 text-araina-black/70 sm:text-base">
@@ -32,7 +32,7 @@ export const PublicPageHero = ({
         )}
       </div>
       {image && (
-        <div className="relative mx-auto w-full max-w-[540px] lg:col-span-5 lg:max-w-none">
+        <div className="relative mx-auto w-full min-w-0 max-w-[540px] lg:col-span-5 lg:max-w-none">
           <div className="absolute -inset-y-4 inset-x-0 rounded-[2rem] bg-gradient-to-br from-araina-pink/15 via-transparent to-araina-blue/20 blur-2xl" />
           <div className={`relative overflow-hidden border border-white/80 bg-white/70 shadow-2xl shadow-araina-black/10 ${imageShape} ${imageAspect}`}>
             <img

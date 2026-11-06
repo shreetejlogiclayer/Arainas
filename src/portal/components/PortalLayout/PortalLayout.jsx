@@ -153,9 +153,9 @@ const PortalLayout = ({
 
       {/* ==================== MAIN CONTENT ==================== */}
       <main
-        className={`relative z-10 ${showHeader ? "pt-24 sm:pt-28" : ""} min-h-screen bg-transparent`}
+        className={`relative z-10 min-w-0 w-full ${showHeader ? "pt-24 sm:pt-28" : ""} min-h-screen bg-transparent`}
       >
-        <div className="max-w-7xl mx-auto px-6 py-12">{children}</div>
+        <div className="mx-auto w-full max-w-7xl min-w-0 px-4 py-8 sm:px-6 sm:py-12">{children}</div>
       </main>
 
       {/* ==================== FOOTER ==================== */}

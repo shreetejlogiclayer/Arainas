@@ -23,12 +23,6 @@ const addressFields = [
   "state",
   "pinCode",
 ];
-const payuTestSingleBoxPrice =
-  process.env.NODE_ENV === "development" &&
-  process.env.PAYMENT_PROVIDER === "payu" &&
-  process.env.PAYU_ENV === "test"
-    ? 1
-    : null;
 const defaultProduct = {
   name: "Araina Sanitary Pads",
   description: "Premium sanitary pads designed with women's health in focus",
@@ -36,7 +30,7 @@ const defaultProduct = {
   quantities: [
     {
       boxes: 1,
-      pricePerBox: payuTestSingleBoxPrice ?? 3000,
+      pricePerBox: 3000,
       mrp: 4400,
       discount: 1400,
     },
@@ -211,18 +205,22 @@ export const ensureDefaultOrderCatalog = async () => {
     data: { active: false },
   });
   await Promise.all(
-    defaultProduct.quantities.map(({ boxes, pricePerBox }) =>
-      prisma.pricingTier.upsert({
+    defaultProduct.quantities.map(async ({ boxes, pricePerBox }) => {
+      const existingTier = await prisma.pricingTier.findUnique({
+        where: { productId_boxes: { productId: product.id, boxes } },
+        select: { pricePerBox: true },
+      });
+      await prisma.pricingTier.upsert({
         where: { productId_boxes: { productId: product.id, boxes } },
         create: { productId: product.id, boxes, pricePerBox, active: true },
         update: {
           active: true,
-          ...(boxes === 1 && payuTestSingleBoxPrice !== null
-            ? { pricePerBox: payuTestSingleBoxPrice }
+          ...(boxes === 1 && existingTier?.pricePerBox === 1
+            ? { pricePerBox }
             : {}),
         },
-      }),
-    ),
+      });
+    }),
   );
 };
 
@@ -289,28 +287,6 @@ export const createOrder = async (userId, input) => {
   const payuEnabled = isPayuEnabled();
   let paymentEmail = "";
   let paymentTransactionId = "";
-  if (payuEnabled) {
-    getPayuSettings();
-    paymentEmail =
-      typeof input.paymentEmail === "string" ? input.paymentEmail.trim() : "";
-    if (
-      paymentEmail.length > 255 ||
-      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(paymentEmail)
-    ) {
-      throw new Error("Enter a valid email address for PayU checkout.");
-    }
-    paymentTransactionId = randomUUID().replaceAll("-", "").slice(0, 25);
-  }
-  if (!Number.isInteger(boxes) || boxes <= 0) {
-    throw new Error("Select a valid order quantity");
-  }
-  if (!["self", "other"].includes(recipientType)) {
-    throw new Error("Choose whether this order is for you or someone else");
-  }
-  if (couponId != null && (typeof couponId !== "string" || !couponId)) {
-    throw new Error("Select a valid coupon");
-  }
-
   const [product, tier, user] = await Promise.all([
     prisma.product.findFirst({
       where: { active: true, name: defaultProduct.name },
@@ -333,6 +309,30 @@ export const createOrder = async (userId, input) => {
       },
     }),
   ]);
+  if (payuEnabled) {
+    getPayuSettings();
+    const requestedEmail =
+      typeof input.paymentEmail === "string" ? input.paymentEmail.trim() : "";
+    paymentEmail =
+      requestedEmail || user?.email?.trim() || "care@arainas.com";
+    if (
+      requestedEmail.length > 255 ||
+      paymentEmail.length > 255 ||
+      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(paymentEmail)
+    ) {
+      throw new Error("Enter a valid email address for PayU checkout.");
+    }
+    paymentTransactionId = randomUUID().replaceAll("-", "").slice(0, 25);
+  }
+  if (!Number.isInteger(boxes) || boxes <= 0) {
+    throw new Error("Select a valid order quantity");
+  }
+  if (!["self", "other"].includes(recipientType)) {
+    throw new Error("Choose whether this order is for you or someone else");
+  }
+  if (couponId != null && (typeof couponId !== "string" || !couponId)) {
+    throw new Error("Select a valid coupon");
+  }
 
   if (!product) throw new Error("The selected product is unavailable");
   if (!tier) throw new Error("Selected quantity is unavailable");
