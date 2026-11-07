@@ -31,7 +31,7 @@ Deploy the repository as one Node.js application for `arainas.com`. Do not deplo
 - **Build command:** `npm install --include=dev && npm run build`
 - **Start command:** `npm start`
 - **Application root:** repository root
-- **Application entry point (if requested):** `server/src/index.js`
+- **Application entry point (if requested):** `server/src/index.js` (preferred); `server.js` is a root-level compatibility entry for platforms configured to use that default.
 - **Frontend build output:** `dist`
 - **API:** same-origin `/api`
 
