@@ -100,6 +100,9 @@ const getPaymentMethodLabel = (provider) =>
       ? "PayU"
       : provider || "Not available";
 
+const getDeliveryMethodLabel = (method) =>
+  method === "hand" ? "By Hand" : "Courier";
+
 const getInvoiceHtml = (order) => {
   const item = order.items?.[0] || {};
   const recipient = order.recipient || {};
@@ -140,9 +143,9 @@ table{width:100%;border-collapse:collapse;margin:16px 0 24px}th{text-align:left;
 <section class="people"><div class="card"><p class="label">Ordered by</p><div class="person">${escapeHtml(order.orderedByName)}</div><div class="info">${escapeHtml(formatPhone(order.orderedByMobile || ""))}</div></div><div class="card"><p class="label">Ordered for · ${order.recipientType === "other" ? "Someone else" : "Myself"}</p><div class="person">${escapeHtml(recipient.name || order.deliveryRecipientName)}</div><div class="info">${escapeHtml(formatPhone(recipient.mobile || ""))}${recipient.alternateMobile ? ` · Alt: ${escapeHtml(formatPhone(recipient.alternateMobile))}` : ""}</div><div class="info">${addressHtml}</div></div></section>
 <p class="label">Order details</p><table><thead><tr><th>Product</th><th>Mega Boxes</th><th>Rate / Mega Box</th><th>Amount</th></tr></thead><tbody><tr><td><strong>${escapeHtml(item.product || "Araina Sanitary Pads")}</strong></td><td>${escapeHtml(item.boxes)}</td><td>${escapeHtml(formatCurrency(item.pricePerBox || 0))}</td><td>${escapeHtml(formatCurrency(item.subtotal || 0))}</td></tr></tbody></table>
 <div class="total"><div class="sum"><span>Subtotal</span><strong>${escapeHtml(formatCurrency(order.subtotal))}</strong></div>${order.discount ? `<div class="sum"><span>Coupon discount</span><strong>−${escapeHtml(formatCurrency(order.discount))}</strong></div>` : ""}<div class="sum grand"><span>Total</span><span>${escapeHtml(formatCurrency(order.total))}</span></div></div>
-<div class="status"><strong>Order status:</strong> ${escapeHtml(order.orderStatus)} · <strong>Payment:</strong> ${escapeHtml(paymentStatus)}</div>
+<div class="status"><strong>Delivery method:</strong> ${escapeHtml(getDeliveryMethodLabel(order.deliveryMethod))} · <strong>Order status:</strong> ${escapeHtml(order.orderStatus)} · <strong>Payment:</strong> ${escapeHtml(paymentStatus)}</div>
 ${paymentDetails}
-<div class="status"><strong>Courier delivery:</strong> If applicable, extra courier charges are payable directly to the courier upon delivery and are not included in the order total.</div>
+${order.deliveryMethod === "hand" ? "" : '<div class="status"><strong>Courier delivery:</strong> If applicable, extra courier charges are payable directly to the courier upon delivery and are not included in the order total.</div>'}
 <footer class="foot">Thank you for choosing Araina. For assistance, contact ${escapeHtml(COMPANY_INFO.phone)}.<br>${escapeHtml(paymentFooter)}</footer>
 </main><script>window.addEventListener("load",()=>window.print())</script></body></html>`;
 };
@@ -473,6 +476,7 @@ const OrdersPage = () => {
         body: JSON.stringify({
           boxes: selectedTier.boxes,
           recipientType: orderRecipientType,
+          deliveryMethod,
           ...(selectedCouponId && { couponId: selectedCouponId }),
           ...(orderRecipientType === "other" && {
             recipient: {
@@ -1371,6 +1375,9 @@ const OrdersPage = () => {
                       <p className="mt-1 text-sm text-araina-black/60">
                         Order #{receiptOrder.orderNumber}
                       </p>
+                      <p className="mt-1 text-sm text-araina-black/60">
+                        Delivery method: {getDeliveryMethodLabel(receiptOrder.deliveryMethod)}
+                      </p>
                     </div>
                     <button
                       type="button"
@@ -1484,6 +1491,9 @@ const OrdersPage = () => {
                         </p>
                         <p className="mt-1 text-xs text-araina-black/50">
                           {formatDateTime(order.createdAt)}
+                        </p>
+                        <p className="mt-2 text-xs font-semibold text-araina-black/60">
+                          Delivery method: {getDeliveryMethodLabel(order.deliveryMethod)}
                         </p>
                         <p className="mt-4 font-semibold text-araina-black">
                           {item?.product} · {item?.boxes} Mega{" "}

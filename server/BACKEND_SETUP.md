@@ -142,7 +142,7 @@ Expected response:
 
 - `GET /api/orders/catalog` - Load active products, variants, and quantity pricing
 - `GET /api/orders` - List the signed-in user's orders and recipient snapshots
-- `POST /api/orders` - Place an order for the account holder or another recipient
+- `POST /api/orders` - Place an order for the account holder or another recipient; `deliveryMethod` may be `hand` or `courier` and defaults to `courier` when omitted
 
 Order payment remains disabled until a payment provider is configured.
 

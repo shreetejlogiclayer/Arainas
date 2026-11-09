@@ -445,7 +445,7 @@ router.get("/members/:id", async (req, res) => {
         orders: {
           select: {
             id: true, orderNumber: true, orderedByName: true, orderedByMobile: true,
-            deliveryRecipientName: true, total: true, orderStatus: true, paymentStatus: true, createdAt: true,
+            deliveryRecipientName: true, deliveryMethod: true, total: true, orderStatus: true, paymentStatus: true, createdAt: true,
           },
           orderBy: { createdAt: "desc" },
         },
@@ -496,7 +496,7 @@ router.get("/orders", async (req, res) => {
         orderBy: { createdAt: "desc" },
         select: {
           id: true, orderNumber: true, orderedByName: true, orderedByMobile: true,
-          recipientType: true, deliveryRecipientName: true, subtotal: true, discount: true,
+          recipientType: true, deliveryMethod: true, deliveryRecipientName: true, subtotal: true, discount: true,
           total: true, orderStatus: true, paymentStatus: true, parcelSummaryDownloaded: true, createdAt: true,
           payment: { select: { provider: true, status: true, amount: true } },
         },
@@ -740,7 +740,7 @@ router.get("/orders/:id", async (req, res) => {
       where: { id: req.params.id },
       select: {
         id: true, orderNumber: true, orderedByName: true, orderedByMobile: true,
-        recipientType: true, deliveryRecipientName: true, subtotal: true, discount: true,
+        recipientType: true, deliveryMethod: true, deliveryRecipientName: true, subtotal: true, discount: true,
         total: true, orderStatus: true, paymentStatus: true, parcelSummaryDownloaded: true, createdAt: true, updatedAt: true,
         items: { select: { productNameSnapshot: true, sizeSnapshot: true, quantityBoxes: true, pricePerBoxSnapshot: true, subtotal: true } },
         deliveryAddress: { select: {

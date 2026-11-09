@@ -90,6 +90,7 @@ const serializeOrder = (order) => ({
   orderedByName: order.orderedByName,
   orderedByMobile: order.orderedByMobile,
   recipientType: order.recipientType,
+  deliveryMethod: order.deliveryMethod,
   deliveryRecipientName: order.deliveryRecipientName,
   subtotal: order.subtotal,
   discount: order.discount,
@@ -285,6 +286,7 @@ export const updateOrderPricing = async (prices) => {
 
 export const createOrder = async (userId, input) => {
   const { boxes, recipientType, couponId } = input;
+  const deliveryMethod = input.deliveryMethod ?? "courier";
   const paymentProof = input.paymentProof;
   const [product, tier, user] = await Promise.all([
     prisma.product.findFirst({
@@ -318,6 +320,12 @@ export const createOrder = async (userId, input) => {
   }
   if (!["self", "other"].includes(recipientType)) {
     throw new Error("Choose whether this order is for you or someone else");
+  }
+  if (!["hand", "courier"].includes(deliveryMethod)) {
+    throw new Error("Choose a valid delivery method");
+  }
+  if (deliveryMethod === "hand" && recipientType !== "self") {
+    throw new Error("By Hand orders must be for yourself");
   }
   if (couponId != null && (typeof couponId !== "string" || !couponId)) {
     throw new Error("Select a valid coupon");
@@ -435,6 +443,7 @@ export const createOrder = async (userId, input) => {
           orderedByName: user.profile.fullName.trim(),
           orderedByMobile: cleanPhone(user.mobile),
           recipientType,
+          deliveryMethod,
           deliveryRecipientName: recipient.name,
           subtotal,
           discount,

@@ -222,6 +222,7 @@ model Order {
   orderedByName   String   @db.VarChar(255)
   orderedByMobile String?  @db.VarChar(20)
   recipientType   String   @default("self") @db.VarChar(20)
+  deliveryMethod  String   @default("courier") @db.VarChar(20)
   
   // Delivered To Information
   deliveryRecipientName String @db.VarChar(255)
