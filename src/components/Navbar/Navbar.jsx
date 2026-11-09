@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useLocation, useNavigate, Link } from "react-router-dom";
-import { Menu, X } from "lucide-react";
+import { LogIn, Menu, UserRoundPlus, X } from "lucide-react";
 
 const Navbar = ({ activeSection, setActiveSection }) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -121,13 +121,6 @@ const Navbar = ({ activeSection, setActiveSection }) => {
     return location.pathname === item.path;
   };
 
-  // ==================== JOIN US BUTTON ====================
-  const handleJoinUsClick = () => {
-    setIsOpen(false);
-    // Open Araina User Portal in a new tab
-    window.open("/portal", "_blank", "noopener,noreferrer");
-  };
-
   return (
     <>
       {/* =========================================================
@@ -192,7 +185,7 @@ const Navbar = ({ activeSection, setActiveSection }) => {
             : "bg-transparent py-3"
         }`}
       >
-        <div className="mx-auto flex w-full max-w-7xl items-center justify-between gap-1 px-2 sm:gap-3 sm:px-6 lg:px-8">
+        <div className="mx-auto flex w-full max-w-7xl items-center justify-between gap-2 px-3 sm:gap-4 sm:px-6 lg:px-8">
           {/* ==================== LOGO ==================== */}
           <Link
             to="/"
@@ -204,7 +197,7 @@ const Navbar = ({ activeSection, setActiveSection }) => {
                 });
               }
             }}
-            className="mr-1 flex min-w-0 flex-shrink items-center py-1.5 pr-1 group xl:mr-5"
+            className="flex flex-shrink-0 items-center py-1.5 pr-1 group xl:mr-1"
             aria-label="ARAINA Home"
           >
             <img
@@ -214,13 +207,13 @@ const Navbar = ({ activeSection, setActiveSection }) => {
                 w-auto object-contain
                 transition-all duration-300
                 group-hover:scale-[1.03]
-                ${isScrolled ? "h-12 sm:h-16" : "h-12 sm:h-16 lg:h-20"}
+                ${isScrolled ? "h-10 sm:h-12 xl:h-14" : "h-12 sm:h-14 xl:h-16"}
               `}
             />
           </Link>
 
           {/* ==================== DESKTOP NAVIGATION ==================== */}
-          <nav className="hidden xl:flex flex-1 items-center justify-center gap-5 2xl:gap-7">
+          <nav className="hidden xl:flex flex-1 items-center justify-center gap-4 2xl:gap-6">
             {menuItems.map((item) => {
               const active = isItemActive(item);
 
@@ -228,7 +221,7 @@ const Navbar = ({ activeSection, setActiveSection }) => {
                 <button
                   key={item.id}
                   onClick={() => handleNavClick(item)}
-                  className={`text-xs uppercase tracking-[0.08em] font-semibold transition-all duration-300 relative py-2 whitespace-nowrap ${
+                  className={`text-xs 2xl:text-sm uppercase tracking-[0.08em] font-semibold transition-all duration-300 relative py-2 whitespace-nowrap ${
                     active
                       ? "text-araina-pink"
                       : "text-araina-black/75 hover:text-araina-pink"
@@ -247,11 +240,14 @@ const Navbar = ({ activeSection, setActiveSection }) => {
           </nav>
 
           {/* ==================== DESKTOP JOIN CTA ==================== */}
-          {/* <div className="hidden xl:block flex-shrink-0">
-            <button
-              onClick={handleJoinUsClick}
+          <div className="hidden xl:flex flex-shrink-0 gap-1.5 2xl:gap-2">
+            <Link
+              to="/portal/register"
               className="
                 araina-heartbeat
+                inline-flex
+                items-center
+                gap-1.5
                 bg-araina-pink
                 hover:bg-araina-pink/90
                 text-araina-white
@@ -259,8 +255,9 @@ const Navbar = ({ activeSection, setActiveSection }) => {
                 uppercase
                 tracking-widest
                 font-semibold
-                px-5
-                py-2.5
+                px-3
+                2xl:px-4
+                py-2
                 rounded-full
                 transition-all
                 duration-300
@@ -269,19 +266,58 @@ const Navbar = ({ activeSection, setActiveSection }) => {
                 shadow-araina-pink/20
               "
             >
-              Become a Member
-            </button>
-          </div> */}
+              <UserRoundPlus size={14} aria-hidden="true" />
+              Register
+            </Link>
+            <Link
+              to="/portal/login"
+              className="
+                araina-heartbeat
+                inline-flex
+                items-center
+                gap-1.5
+                bg-araina-pink
+                hover:bg-araina-pink/90
+                text-araina-white
+                text-xs
+                uppercase
+                tracking-widest
+                font-semibold
+                px-3
+                2xl:px-4
+                py-2
+                rounded-full
+                transition-all
+                duration-300
+                shadow-md
+                hover:shadow-lg
+                shadow-araina-pink/20
+              "
+            >
+              <LogIn size={14} aria-hidden="true" />
+              Login
+            </Link>
+          </div>
 
           {/* ==================== MOBILE JOIN CTA ==================== */}
-          {/* <button
-            onClick={handleJoinUsClick}
-            aria-label="Become a Member"
-            className="araina-heartbeat xl:hidden mr-1 flex-shrink-0 whitespace-nowrap rounded-full bg-araina-pink px-2 py-2 text-[9px] font-semibold uppercase tracking-wide text-araina-white shadow-md shadow-araina-pink/20 transition-all duration-300 hover:bg-araina-pink/90 hover:shadow-lg min-[360px]:px-3 min-[360px]:text-[10px] sm:px-4 sm:text-xs"
-          >
-            <span className="min-[360px]:hidden">Join</span>
-            <span className="hidden min-[360px]:inline">Become a Member</span>
-          </button> */}
+          <div className="xl:hidden mr-1 flex flex-shrink-0 gap-1.5">
+            <Link
+              to="/portal/register"
+              onClick={() => setIsOpen(false)}
+              className="araina-heartbeat inline-flex items-center gap-1 whitespace-nowrap rounded-full bg-araina-pink px-2 py-2 text-[9px] font-semibold uppercase tracking-wide text-araina-white shadow-md shadow-araina-pink/20 transition-all duration-300 hover:bg-araina-pink/90 hover:shadow-lg min-[360px]:px-2.5 min-[360px]:text-[10px] sm:px-3 sm:text-xs"
+            >
+              <UserRoundPlus size={12} aria-hidden="true" />
+              Register
+            </Link>
+            <Link
+              to="/portal/login"
+              onClick={() => setIsOpen(false)}
+              className="araina-heartbeat inline-flex items-center gap-1 whitespace-nowrap rounded-full bg-araina-pink px-2 py-2 text-[9px] font-semibold uppercase tracking-wide text-araina-white shadow-md shadow-araina-pink/20 transition-all duration-300 hover:bg-araina-pink/90 hover:shadow-lg min-[360px]:px-2.5 min-[360px]:text-[10px] sm:px-3 sm:text-xs"
+            >
+              <LogIn size={12} aria-hidden="true" />
+              Login
+            </Link>
+          </div>
 
           {/* ==================== MOBILE MENU TOGGLE ==================== */}
           <button

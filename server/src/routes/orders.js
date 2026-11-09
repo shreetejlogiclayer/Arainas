@@ -1,5 +1,6 @@
 import express from "express";
 import { sessionAuthMiddleware } from "../middleware/auth.js";
+import { isDatabaseUnavailableError } from "../utils/errors.js";
 import {
   createOrder,
   getAvailableCoupons,
@@ -117,8 +118,9 @@ router.post("/", async (req, res) => {
       data: order,
     });
   } catch (error) {
+    const databaseUnavailable = isDatabaseUnavailableError(error);
     const candidateStatus =
-      error?.status ||
+      (databaseUnavailable ? 503 : error?.status) ||
       (typeof error?.message === "string" && error.message.includes("unavailable")
         ? 409
         : error?.code
@@ -131,12 +133,21 @@ router.post("/", async (req, res) => {
     res.status(status).json({
       error: {
         status,
+        ...(databaseUnavailable && { code: "DATABASE_UNAVAILABLE" }),
         message:
-          status >= 500
+          databaseUnavailable
+            ? "The order database is temporarily unreachable. Your screenshot is still selected. Check order history before retrying to avoid a duplicate order."
+            : status >= 500
             ? "We couldn’t place your order right now. Please try again shortly."
             : error?.message || "We couldn’t place your order. Please try again.",
       },
     });
+    if (status >= 500) {
+      console.error("Could not place order:", {
+        code: error?.code,
+        message: error?.message,
+      });
+    }
   }
 });
 

@@ -4,12 +4,11 @@ import { cleanPhone, isValidIndianPhone } from "../utils/validators.js";
 import { calculateCouponDiscount } from "../utils/crypto.js";
 import {
   amountToPaise,
-  createPayuCheckout,
-  getPayuSettings,
-  isPayuEnabled,
   verifyPayuCallback,
   verifyPayuTransaction,
 } from "./payuService.js";
+import { deletePaymentProof, savePaymentProof } from "./paymentProofService.js";
+import { sendQrOrderEmail } from "./orderEmailService.js";
 
 const addressFields = [
   "houseNumber",
@@ -180,9 +179,11 @@ export const getAvailableCoupons = async (userId) =>
   });
 
 export const getOrderPaymentConfiguration = () => {
-  if (!isPayuEnabled()) return { enabled: false, provider: "none" };
-  getPayuSettings();
-  return { enabled: true, provider: "payu" };
+  return {
+    enabled: true,
+    provider: "qr_code",
+    qrImageUrl: "/payment-qr.jpeg",
+  };
 };
 
 export const ensureDefaultOrderCatalog = async () => {
@@ -284,9 +285,7 @@ export const updateOrderPricing = async (prices) => {
 
 export const createOrder = async (userId, input) => {
   const { boxes, recipientType, couponId } = input;
-  const payuEnabled = isPayuEnabled();
-  let paymentEmail = "";
-  let paymentTransactionId = "";
+  const paymentProof = input.paymentProof;
   const [product, tier, user] = await Promise.all([
     prisma.product.findFirst({
       where: { active: true, name: defaultProduct.name },
@@ -309,20 +308,10 @@ export const createOrder = async (userId, input) => {
       },
     }),
   ]);
-  if (payuEnabled) {
-    getPayuSettings();
-    const requestedEmail =
-      typeof input.paymentEmail === "string" ? input.paymentEmail.trim() : "";
-    paymentEmail =
-      requestedEmail || user?.email?.trim() || "care@arainas.com";
-    if (
-      requestedEmail.length > 255 ||
-      paymentEmail.length > 255 ||
-      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(paymentEmail)
-    ) {
-      throw new Error("Enter a valid email address for PayU checkout.");
-    }
-    paymentTransactionId = randomUUID().replaceAll("-", "").slice(0, 25);
+  if (!paymentProof || typeof paymentProof !== "object") {
+    const error = new Error("Upload your payment screenshot before placing the order.");
+    error.status = 400;
+    throw error;
   }
   if (!Number.isInteger(boxes) || boxes <= 0) {
     throw new Error("Select a valid order quantity");
@@ -390,108 +379,122 @@ export const createOrder = async (userId, input) => {
 
   const subtotal = tier.boxes * tier.pricePerBox;
   const orderId = randomUUID();
-  const order = await prisma.$transaction(async (transaction) => {
-    let coupon = null;
-    let discount = 0;
-    if (couponId) {
-      coupon = await transaction.coupon.findFirst({
-        where: {
-          id: couponId,
-          userId,
-          status: "available",
-          orderId: null,
-          OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }],
-        },
-      });
-      if (!coupon) throw new Error("That coupon is no longer available");
-      discount = Math.max(
-        0,
-        Math.min(
-          subtotal,
-          calculateCouponDiscount(
-            subtotal,
-            coupon.discountType,
-            coupon.discountValue,
-          ),
-        ),
-      );
-      if (payuEnabled && subtotal - discount <= 0) {
-        throw new Error(
-          "PayU cannot process a zero-value order. Remove the coupon or contact support.",
-        );
-      }
-      const reserved = await transaction.coupon.updateMany({
-        where: {
-          id: coupon.id,
-          userId,
-          status: "available",
-          orderId: null,
-          OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }],
-        },
-        data: { orderId },
-      });
-      if (reserved.count !== 1) {
-        throw new Error("That coupon is no longer available");
-      }
-    }
-
-    return transaction.order.create({
-      data: {
-        id: orderId,
-        orderNumber: `AR-${Date.now()}-${randomUUID().slice(0, 8).toUpperCase()}`,
-        userId,
-        orderedByName: user.profile.fullName.trim(),
-        orderedByMobile: cleanPhone(user.mobile),
-        recipientType,
-        deliveryRecipientName: recipient.name,
-        subtotal,
-        discount,
-        total: subtotal - discount,
-        couponId: coupon?.id || null,
-        paymentStatus: payuEnabled ? "pending" : "not_configured",
-        orderStatus: "pending",
-        items: {
-          create: {
-            productNameSnapshot: product.name,
-            sizeSnapshot: "",
-            quantityBoxes: tier.boxes,
-            pricePerBoxSnapshot: tier.pricePerBox,
-            subtotal,
+  const savedProof = await savePaymentProof(paymentProof);
+  let order;
+  try {
+    order = await prisma.$transaction(async (transaction) => {
+      let coupon = null;
+      let discount = 0;
+      if (couponId) {
+        coupon = await transaction.coupon.findFirst({
+          where: {
+            id: couponId,
+            userId,
+            status: "available",
+            orderId: null,
+            OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }],
           },
-        },
-        ...(payuEnabled && {
-          payment: {
+        });
+        if (!coupon) throw new Error("That coupon is no longer available");
+        discount = Math.max(
+          0,
+          Math.min(
+            subtotal,
+            calculateCouponDiscount(
+              subtotal,
+              coupon.discountType,
+              coupon.discountValue,
+            ),
+          ),
+        );
+        if (subtotal - discount <= 0) {
+          throw new Error(
+            "QR payment requires an order total greater than zero. Remove the coupon or contact support.",
+          );
+        }
+        const reserved = await transaction.coupon.updateMany({
+          where: {
+            id: coupon.id,
+            userId,
+            status: "available",
+            orderId: null,
+            OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }],
+          },
+          data: { orderId },
+        });
+        if (reserved.count !== 1) {
+          throw new Error("That coupon is no longer available");
+        }
+      }
+
+      return transaction.order.create({
+        data: {
+          id: orderId,
+          orderNumber: `AR-${Date.now()}-${randomUUID().slice(0, 8).toUpperCase()}`,
+          userId,
+          orderedByName: user.profile.fullName.trim(),
+          orderedByMobile: cleanPhone(user.mobile),
+          recipientType,
+          deliveryRecipientName: recipient.name,
+          subtotal,
+          discount,
+          total: subtotal - discount,
+          couponId: coupon?.id || null,
+          paymentStatus: "pending",
+          orderStatus: "pending",
+          items: {
             create: {
-              provider: "payu",
-              status: "pending",
-              amount: subtotal - discount,
-              transactionId: paymentTransactionId,
+              productNameSnapshot: product.name,
+              sizeSnapshot: "",
+              quantityBoxes: tier.boxes,
+              pricePerBoxSnapshot: tier.pricePerBox,
+              subtotal,
             },
           },
-        }),
-        deliveryAddress: {
-          create: {
-            ...address,
-            recipientMobile: recipient.mobile,
-            recipientAlternateMobile: recipient.alternateMobile,
-            country: "India",
+          payment: {
+            create: {
+              provider: "qr_code",
+              status: "pending",
+              amount: subtotal - discount,
+              paymentProofKey: savedProof.storageKey,
+            },
+          },
+          deliveryAddress: {
+            create: {
+              ...address,
+              recipientMobile: recipient.mobile,
+              recipientAlternateMobile: recipient.alternateMobile,
+              country: "India",
+            },
           },
         },
-      },
-      include: { items: true, deliveryAddress: true, payment: true },
+        include: { items: true, deliveryAddress: true, payment: true },
+      });
     });
-  });
+  } catch (error) {
+    await deletePaymentProof(savedProof.storageKey).catch((cleanupError) => {
+      console.error("Failed to clean up an unlinked payment proof:", cleanupError);
+    });
+    throw error;
+  }
 
   const serializedOrder = serializeOrder(order);
-  if (!payuEnabled) return serializedOrder;
-  return {
-    order: serializedOrder,
-    checkout: createPayuCheckout(
-      serializedOrder,
-      paymentTransactionId,
-      paymentEmail,
-    ),
-  };
+  let emailSent = true;
+  try {
+    const emailOrder = await prisma.order.findUnique({
+      where: { id: order.id },
+      include: { items: true, deliveryAddress: true },
+    });
+    await sendQrOrderEmail(emailOrder, savedProof.storageKey);
+  } catch (error) {
+    emailSent = false;
+    console.error("Could not email QR payment order:", {
+      orderNumber: order.orderNumber,
+      code: error?.code,
+      responseCode: error?.responseCode,
+    });
+  }
+  return { ...serializedOrder, emailSent };
 };
 
 export const processPayuCallback = async (callbackFields) => {
@@ -557,17 +560,23 @@ export const updateOrderPaymentStatus = async (
   return prisma.$transaction(async (transaction) => {
     const existingOrder = await transaction.order.findUnique({
       where: { id: orderId },
-      select: { id: true, userId: true, couponId: true, paymentStatus: true },
+      select: {
+        id: true,
+        userId: true,
+        couponId: true,
+        paymentStatus: true,
+        payment: { select: { id: true } },
+      },
     });
     if (!existingOrder) throw new Error("Order not found");
     if (existingOrder.paymentStatus === "success") {
       if (paymentStatus !== "success") {
         throw new Error("A successful payment cannot be changed");
       }
-      if (paymentUpdate) {
+      if (existingOrder.payment && paymentStatus === "success") {
         await transaction.payment.update({
           where: { orderId },
-          data: paymentUpdate,
+          data: { status: paymentStatus, ...paymentUpdate },
         });
       }
       const completedOrder = await transaction.order.findUnique({
@@ -661,10 +670,10 @@ export const updateOrderPaymentStatus = async (
       });
     }
 
-    if (paymentUpdate) {
+    if (existingOrder.payment) {
       await transaction.payment.update({
         where: { orderId },
-        data: paymentUpdate,
+        data: { status: paymentStatus, ...paymentUpdate },
       });
     }
 

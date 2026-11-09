@@ -46,6 +46,7 @@ if (NODE_ENV === "production") {
 // ==================== MIDDLEWARE ====================
 
 // Body Parser
+app.use("/api/orders", express.json({ limit: "7mb" }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 

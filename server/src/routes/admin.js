@@ -4,6 +4,7 @@ import { prisma } from "../services/authService.js";
 import { comparePassword, hashPassword } from "../utils/crypto.js";
 import { rateLimit } from "../middleware/auth.js";
 import { deleteStoredProfilePhotos } from "../services/profileMediaService.js";
+import { getPaymentProof } from "../services/paymentProofService.js";
 import { generateRandomCode } from "../utils/crypto.js";
 import { cleanPhone, isValidEmail, isValidIndianPhone, normalizeEmail } from "../utils/validators.js";
 import { getOrderPricing, updateOrderPaymentStatus, updateOrderPricing } from "../services/orderService.js";
@@ -497,11 +498,26 @@ router.get("/orders", async (req, res) => {
           id: true, orderNumber: true, orderedByName: true, orderedByMobile: true,
           recipientType: true, deliveryRecipientName: true, subtotal: true, discount: true,
           total: true, orderStatus: true, paymentStatus: true, parcelSummaryDownloaded: true, createdAt: true,
+          payment: { select: { provider: true, status: true, amount: true } },
         },
       }),
       prisma.order.count({ where }),
     ]);
-    return res.json({ success: true, data: { items, total, page: pagination.page, pageSize: pagination.limit } });
+    return res.json({
+      success: true,
+      data: {
+        items: items.map((order) => ({
+          ...order,
+          paymentMethod:
+            order.payment?.provider === "qr_code"
+              ? "By QR code"
+              : order.payment?.provider || "Not available",
+        })),
+        total,
+        page: pagination.page,
+        pageSize: pagination.limit,
+      },
+    });
   } catch (error) {
     console.error("Admin order search failed:", error);
     return res.status(500).json({ error: { message: "Unable to load orders." } });
@@ -694,6 +710,29 @@ router.patch("/orders/:id/status", async (req, res) => {
   }
 });
 
+router.get("/orders/:id/payment-proof", async (req, res) => {
+  if (!validId(req.params.id)) return res.status(400).json({ error: { message: "Invalid order ID." } });
+  try {
+    const payment = await prisma.payment.findUnique({
+      where: { orderId: req.params.id },
+      select: { paymentProofKey: true },
+    });
+    if (!payment?.paymentProofKey) {
+      return res.status(404).json({ error: { message: "Payment screenshot not found." } });
+    }
+    const proof = await getPaymentProof(payment.paymentProofKey);
+    res.set({
+      "Cache-Control": "private, no-store",
+      "Content-Disposition": 'inline; filename="payment-proof"',
+      "X-Content-Type-Options": "nosniff",
+    });
+    return res.type(proof.contentType).send(proof.buffer);
+  } catch (error) {
+    console.error("Admin payment proof retrieval failed:", error);
+    return res.status(500).json({ error: { message: "Unable to load payment screenshot." } });
+  }
+});
+
 router.get("/orders/:id", async (req, res) => {
   if (!validId(req.params.id)) return res.status(400).json({ error: { message: "Invalid order ID." } });
   try {
@@ -710,10 +749,35 @@ router.get("/orders/:id", async (req, res) => {
           recipientMobile: true, recipientAlternateMobile: true,
         } },
         user: { select: { mobile: true, email: true, profile: { select: { fullName: true } } } },
+        payment: {
+          select: {
+            provider: true,
+            status: true,
+            amount: true,
+            transactionId: true,
+            paymentProofKey: true,
+          },
+        },
       },
     });
     if (!order) return res.status(404).json({ error: { message: "Order not found." } });
-    return res.json({ success: true, data: order });
+    const { paymentProofKey, ...payment } = order.payment || {};
+    return res.json({
+      success: true,
+      data: {
+        ...order,
+        payment: order.payment
+          ? {
+              ...payment,
+              method:
+                payment.provider === "qr_code" ? "By QR code" : payment.provider,
+              ...(paymentProofKey
+                ? { proofUrl: `/api/admin/orders/${order.id}/payment-proof` }
+                : {}),
+            }
+          : null,
+      },
+    });
   } catch (error) {
     console.error("Admin order detail query failed:", error);
     return res.status(500).json({ error: { message: "Unable to load order details." } });

@@ -12,7 +12,7 @@
     "build:frontend": "vite build",
     "build:backend": "npm install --prefix server --include=dev && npm run prisma:generate --prefix server",
     "start": "npm --prefix server start",
-    "lint": "oxlint",
+    "lint": "oxlint src server/src",
     "preview": "vite preview"
   },
   "dependencies": {

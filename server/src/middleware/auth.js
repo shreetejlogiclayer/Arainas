@@ -1,5 +1,6 @@
 import { verifyToken, extractTokenFromHeader } from "../utils/crypto.js";
 import { Errors } from "../utils/errors.js";
+import { isDatabaseUnavailableError } from "../utils/errors.js";
 import { prisma } from "../services/authService.js";
 
 /**
@@ -55,10 +56,19 @@ export const sessionAuthMiddleware = async (req, res, next) => {
   }
 
   try {
-    const user = await prisma.user.findUnique({
-      where: { id: req.session.userId },
-      select: { status: true },
-    });
+    let user;
+    for (let attempt = 0; ; attempt += 1) {
+      try {
+        user = await prisma.user.findUnique({
+          where: { id: req.session.userId },
+          select: { status: true },
+        });
+        break;
+      } catch (error) {
+        if (!isDatabaseUnavailableError(error) || attempt > 0) throw error;
+        await new Promise((resolve) => setTimeout(resolve, 300));
+      }
+    }
     if (!user || user.status !== "active") {
       return req.session.destroy((error) => {
         if (error) {
@@ -80,8 +90,16 @@ export const sessionAuthMiddleware = async (req, res, next) => {
     return next();
   } catch (error) {
     console.error("Could not verify user session status:", error);
-    return res.status(500).json({
-      error: { status: 500, message: "Unable to verify account status." },
+    const databaseUnavailable = isDatabaseUnavailableError(error);
+    const status = databaseUnavailable ? 503 : 500;
+    return res.status(status).json({
+      error: {
+        status,
+        ...(databaseUnavailable && { code: "DATABASE_UNAVAILABLE" }),
+        message: databaseUnavailable
+          ? "The account database is temporarily unreachable. Please try again shortly."
+          : "Unable to verify account status.",
+      },
     });
   }
 };

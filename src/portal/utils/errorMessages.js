@@ -6,6 +6,9 @@ export const getPortalErrorMessage = (
   if (error?.status === 401) {
     return "Your session has expired. Please sign in again.";
   }
+  if (error?.code === "DATABASE_UNAVAILABLE") {
+    return error.message;
+  }
   if (error?.status >= 500) {
     return "We’re having trouble completing this right now. Please try again shortly.";
   }

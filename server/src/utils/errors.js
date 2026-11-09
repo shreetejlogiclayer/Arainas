@@ -34,6 +34,9 @@ export const createSuccessResponse = (data, message = "Success") => {
   };
 };
 
+export const isDatabaseUnavailableError = (error) =>
+  ["P1001", "P1002", "P1017"].includes(error?.code);
+
 /**
  * Common API errors
  */

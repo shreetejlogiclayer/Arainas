@@ -1,0 +1,2 @@
+ALTER TABLE `Payment`
+ADD COLUMN `paymentProofKey` VARCHAR(255) NULL;

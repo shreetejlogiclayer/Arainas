@@ -12,6 +12,7 @@ export const requestPortalJson = async (url, options = {}) => {
       result?.error?.message || "We couldn’t complete that request. Please try again.",
     );
     error.status = response.status;
+    error.code = result?.error?.code;
     throw error;
   }
 

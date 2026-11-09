@@ -1,31 +1,49 @@
-import React, { Component, useState, useEffect } from "react";
+import React, { Component, Suspense, lazy, useState, useEffect } from "react";
 import { Routes, Route, useLocation } from "react-router-dom";
 import Navbar from "./components/Navbar/Navbar";
 import Footer from "./components/Footer/Footer";
 import ScrollToTop from "./components/ScrollToTop/ScrollToTop";
 
-import HomePage from "./pages/HomePage";
-import AboutPage from "./pages/AboutPage";
-import ProductsPage from "./pages/ProductsPage";
-import WhyUsPage from "./pages/WhyUsPage";
-import ContactPage from "./pages/ContactPage";
-import ArainaPage from "./pages/ArainaPage";
-import WomensHealthPage from "./pages/WomensHealthPage";
-import OpportunityPage from "./pages/OpportunityPage";
-import MediaPage from "./pages/MediaPage";
+const HomePage = lazy(() => import("./pages/HomePage"));
+const AboutPage = lazy(() => import("./pages/AboutPage"));
+const ProductsPage = lazy(() => import("./pages/ProductsPage"));
+const WhyUsPage = lazy(() => import("./pages/WhyUsPage"));
+const ContactPage = lazy(() => import("./pages/ContactPage"));
+const ArainaPage = lazy(() => import("./pages/ArainaPage"));
+const WomensHealthPage = lazy(() => import("./pages/WomensHealthPage"));
+const OpportunityPage = lazy(() => import("./pages/OpportunityPage"));
+const MediaPage = lazy(() => import("./pages/MediaPage"));
 
 // Portal Imports
 import ProtectedRoute from "./portal/components/ProtectedRoute/ProtectedRoute";
-import AuthOptionsPage from "./portal/pages/AuthOptionsPage/AuthOptionsPage";
-import LoginPage from "./portal/pages/LoginPage/LoginPage";
-import RegisterPage from "./portal/pages/RegisterPage/RegisterPage";
-import ForgotPasswordPage from "./portal/pages/ForgotPasswordPage/ForgotPasswordPage";
-import CreateProfilePage from "./portal/pages/CreateProfilePage/CreateProfilePage";
-import DashboardPage from "./portal/pages/DashboardPage/DashboardPage";
-import OrdersPage from "./portal/pages/OrdersPage/OrdersPage";
-import ProfilePage from "./portal/pages/ProfilePage/ProfilePage";
-import ReferralsPage from "./portal/pages/ReferralsPage/ReferralsPage";
-import CouponsPage from "./portal/pages/CouponsPage/CouponsPage";
+const AuthOptionsPage = lazy(() =>
+  import("./portal/pages/AuthOptionsPage/AuthOptionsPage"),
+);
+const LoginPage = lazy(() => import("./portal/pages/LoginPage/LoginPage"));
+const RegisterPage = lazy(() =>
+  import("./portal/pages/RegisterPage/RegisterPage"),
+);
+const ForgotPasswordPage = lazy(() =>
+  import("./portal/pages/ForgotPasswordPage/ForgotPasswordPage"),
+);
+const CreateProfilePage = lazy(() =>
+  import("./portal/pages/CreateProfilePage/CreateProfilePage"),
+);
+const DashboardPage = lazy(() =>
+  import("./portal/pages/DashboardPage/DashboardPage"),
+);
+const OrdersPage = lazy(() =>
+  import("./portal/pages/OrdersPage/OrdersPage"),
+);
+const ProfilePage = lazy(() =>
+  import("./portal/pages/ProfilePage/ProfilePage"),
+);
+const ReferralsPage = lazy(() =>
+  import("./portal/pages/ReferralsPage/ReferralsPage"),
+);
+const CouponsPage = lazy(() =>
+  import("./portal/pages/CouponsPage/CouponsPage"),
+);
 
 class AppErrorBoundary extends Component {
   state = { hasError: false };
@@ -208,6 +226,16 @@ function App() {
         className={`min-w-0 w-full flex-grow ${showPublicLayout ? "public-page-background" : ""}`}
       >
         <AppErrorBoundary key={location.pathname}>
+        <Suspense
+          fallback={
+            <div
+              role="status"
+              className="mx-auto my-16 max-w-xl text-center text-sm text-araina-black/60"
+            >
+              Loading page…
+            </div>
+          }
+        >
         <Routes>
           {/* ==================== PUBLIC ROUTES ==================== */}
           <Route path="/" element={<HomePage />} />
@@ -299,6 +327,7 @@ function App() {
             }
           />
         </Routes>
+        </Suspense>
         </AppErrorBoundary>
       </main>
 

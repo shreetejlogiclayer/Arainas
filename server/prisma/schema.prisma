@@ -309,6 +309,7 @@ model Payment {
   status          String   @default("pending") @db.VarChar(50) // pending, success, failed, refunded
   provider        String   @db.VarChar(50) // payu, razorpay, cashfree, etc.
   transactionId   String?  @db.VarChar(255)
+  paymentProofKey String?  @db.VarChar(255)
   amount          Int // Amount in rupees
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
