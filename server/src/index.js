@@ -1,4 +1,3 @@
-import dotenv from "dotenv";
 import express from "express";
 import cors from "cors";
 import session from "express-session";
@@ -8,6 +7,7 @@ import { fileURLToPath } from "node:url";
 import { PrismaSessionStore } from "./services/prismaSessionStore.js";
 
 if (process.env.NODE_ENV !== "production") {
+  const { default: dotenv } = await import("dotenv");
   dotenv.config({ path: fileURLToPath(new URL("../.env", import.meta.url)) });
 }
 
