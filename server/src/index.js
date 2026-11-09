@@ -25,7 +25,7 @@ const [
   import("./services/orderService.js"),
 ]);
 
-const app = express();
+export const app = express();
 const prisma = new PrismaClient();
 const NODE_ENV = process.env.NODE_ENV || "development";
 const frontendDistPath = fileURLToPath(new URL("../../dist/", import.meta.url));
@@ -186,7 +186,7 @@ app.use((req, res) => {
 
 let httpServer;
 
-const initializeDatabase = async () => {
+export const initializeDatabase = async () => {
   try {
     if (NODE_ENV === "production") {
       for (const name of ["SESSION_SECRET", "JWT_SECRET"]) {
@@ -230,6 +230,10 @@ export const startServer = (portValue) => {
       `);
     void initializeDatabase();
   });
+};
+
+export const registerHttpServer = (server) => {
+  httpServer = server;
 };
 
 const shutdown = async () => {
