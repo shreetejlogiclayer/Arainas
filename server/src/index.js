@@ -212,7 +212,7 @@ const initializeDatabase = async () => {
   }
 };
 
-const startServer = () => {
+export const startServer = () => {
   httpServer = app.listen(PORT, "0.0.0.0", () => {
     console.log(`
 ╔══════════════════════════════════════════════════════════╗
@@ -241,5 +241,3 @@ const shutdown = async () => {
 
 process.once("SIGINT", shutdown);
 process.once("SIGTERM", shutdown);
-
-startServer();
