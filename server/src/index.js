@@ -28,7 +28,6 @@ const [
 const app = express();
 const prisma = new PrismaClient();
 const NODE_ENV = process.env.NODE_ENV || "development";
-const PORT = process.env.PORT || 3000;
 const frontendDistPath = fileURLToPath(new URL("../../dist/", import.meta.url));
 const frontendIndexPath = path.join(frontendDistPath, "index.html");
 let databaseReady = false;
@@ -86,7 +85,7 @@ app.get("/health", (req, res) => {
 });
 
 app.get("/api/health", (req, res) => {
-  res.json({ status: "ok", timestamp: new Date().toISOString() });
+  res.status(200).json({ ok: true });
 });
 
 // API Version
@@ -210,7 +209,12 @@ const initializeDatabase = async () => {
   }
 };
 
-export const startServer = () => {
+export const startServer = (portValue) => {
+  const PORT = Number(portValue);
+  if (!Number.isInteger(PORT) || PORT < 1 || PORT > 65535) {
+    throw new Error("Hostinger PORT variable is missing or invalid");
+  }
+
   httpServer = app.listen(PORT, "0.0.0.0", () => {
     console.log(`Server listening on port ${PORT}`);
     console.log(`
@@ -240,3 +244,7 @@ const shutdown = async () => {
 
 process.once("SIGINT", shutdown);
 process.once("SIGTERM", shutdown);
+
+if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  startServer(process.env.PORT);
+}

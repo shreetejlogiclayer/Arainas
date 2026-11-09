@@ -1,3 +1,4 @@
-import { startServer } from "./server/src/index.js";
+const platformPort = process.env.PORT;
+const { startServer } = await import("./server/src/index.js");
 
-startServer();
+startServer(platformPort);
