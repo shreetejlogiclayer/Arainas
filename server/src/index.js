@@ -3,7 +3,6 @@ import express from "express";
 import cors from "cors";
 import session from "express-session";
 import { PrismaClient } from "@prisma/client";
-import { existsSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { PrismaSessionStore } from "./services/prismaSessionStore.js";
@@ -37,14 +36,6 @@ let shutdownRequested = false;
 let databaseRetryTimer;
 
 if (NODE_ENV === "production") {
-  for (const name of ["SESSION_SECRET", "JWT_SECRET"]) {
-    if (!process.env[name] || process.env[name].length < 32) {
-      throw new Error(`${name} must be set to a secret of at least 32 characters in production.`);
-    }
-  }
-  if (!existsSync(frontendIndexPath)) {
-    throw new Error("Frontend build not found. Run `npm run build` before starting the production server.");
-  }
   app.set("trust proxy", 1);
 }
 
@@ -198,6 +189,13 @@ let httpServer;
 
 const initializeDatabase = async () => {
   try {
+    if (NODE_ENV === "production") {
+      for (const name of ["SESSION_SECRET", "JWT_SECRET"]) {
+        if (!process.env[name] || process.env[name].length < 32) {
+          throw new Error(`${name} must be set to a secret of at least 32 characters in production.`);
+        }
+      }
+    }
     await prisma.$connect();
     await ensureDefaultOrderCatalog();
     databaseReady = true;
