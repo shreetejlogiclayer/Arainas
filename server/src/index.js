@@ -30,6 +30,9 @@ const PORT = process.env.PORT || 5001;
 const NODE_ENV = process.env.NODE_ENV || "development";
 const frontendDistPath = fileURLToPath(new URL("../../dist/", import.meta.url));
 const frontendIndexPath = path.join(frontendDistPath, "index.html");
+let databaseReady = false;
+let shutdownRequested = false;
+let databaseRetryTimer;
 
 if (NODE_ENV === "production") {
   for (const name of ["SESSION_SECRET", "JWT_SECRET"]) {
@@ -100,6 +103,25 @@ app.get("/api/version", (req, res) => {
     environment: NODE_ENV,
   });
 });
+
+app.get("/api/ready", (_req, res) => {
+  res.status(databaseReady ? 200 : 503).json({
+    status: databaseReady ? "ready" : "starting",
+  });
+});
+
+app.use(
+  ["/api/auth", "/api/orders", "/api/admin", "/api/contact"],
+  (_req, res, next) => {
+    if (databaseReady) return next();
+    return res.status(503).json({
+      error: {
+        status: 503,
+        message: "The service is starting. Please try again shortly.",
+      },
+    });
+  },
+);
 
 // import profileRoutes from './routes/profile.js';
 // import orderRoutes from './routes/orders.js';
@@ -172,15 +194,25 @@ app.use((req, res) => {
 
 let httpServer;
 
-const startServer = async () => {
+const initializeDatabase = async () => {
   try {
-    // Test database connection
     await prisma.$connect();
     await ensureDefaultOrderCatalog();
+    databaseReady = true;
     console.log("✓ Database connected");
+    console.log("✓ Database initialization complete");
+  } catch (error) {
+    console.error("Database initialization failed; retrying in 10 seconds:", error);
+    if (!shutdownRequested) {
+      databaseRetryTimer = setTimeout(initializeDatabase, 10_000);
+      databaseRetryTimer.unref();
+    }
+  }
+};
 
-    httpServer = app.listen(PORT, "0.0.0.0", () => {
-      console.log(`
+const startServer = () => {
+  httpServer = app.listen(PORT, "0.0.0.0", () => {
+    console.log(`
 ╔══════════════════════════════════════════════════════════╗
 ║  🚀 ARAINA Backend Server                                 ║
 ║━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━║
@@ -188,19 +220,16 @@ const startServer = async () => {
 ║  Port: ${PORT.toString().padEnd(45)} ║
 ║  API URL: /api                                             ║
 ║━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━║
-║  ✓ Server running                                         ║
-║  ✓ Database connected                                    ║
-║  ✓ Ready for requests                                    ║
+║  ✓ HTTP server accepting requests                        ║
 ╚══════════════════════════════════════════════════════════╝
       `);
-    });
-  } catch (error) {
-    console.error("Failed to start server:", error);
-    process.exit(1);
-  }
+    void initializeDatabase();
+  });
 };
 
 const shutdown = async () => {
+  shutdownRequested = true;
+  if (databaseRetryTimer) clearTimeout(databaseRetryTimer);
   console.log("\nShutting down gracefully...");
   if (httpServer) {
     await new Promise((resolve) => httpServer.close(resolve));
