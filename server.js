@@ -1,5 +1,5 @@
 const platformPort = process.env.PORT;
-process.env.NODE_ENV ||= "production";
+process.env.NODE_ENV = "production";
 const { app, initializeDatabase, registerHttpServer } = await import(
   "./server/src/index.js"
 );
