@@ -8,7 +8,9 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { PrismaSessionStore } from "./services/prismaSessionStore.js";
 
-dotenv.config({ path: fileURLToPath(new URL("../.env", import.meta.url)) });
+if (process.env.NODE_ENV !== "production") {
+  dotenv.config({ path: fileURLToPath(new URL("../.env", import.meta.url)) });
+}
 
 const [
   { default: authRoutes },
@@ -26,8 +28,8 @@ const [
 
 const app = express();
 const prisma = new PrismaClient();
-const PORT = process.env.PORT || 5001;
 const NODE_ENV = process.env.NODE_ENV || "development";
+const PORT = process.env.PORT || 3000;
 const frontendDistPath = fileURLToPath(new URL("../../dist/", import.meta.url));
 const frontendIndexPath = path.join(frontendDistPath, "index.html");
 let databaseReady = false;
