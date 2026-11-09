@@ -11,7 +11,7 @@
     "build": "npm run build:frontend && npm run build:backend",
     "build:frontend": "vite build",
     "build:backend": "npm install --prefix server --include=dev && npm run prisma:generate --prefix server",
-    "start": "npm --prefix server start",
+    "start": "node server.js",
     "lint": "oxlint src server/src",
     "preview": "vite preview"
   },
