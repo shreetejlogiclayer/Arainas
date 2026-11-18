@@ -1,0 +1,1 @@
+import{n as e,t}from"./jsx-runtime-CwtgHpVt.js";import{t as n}from"./ProfileForm-BwvW9jof.js";e();var r=t(),i=()=>(0,r.jsx)(n,{mode:`create`});export{i as default};

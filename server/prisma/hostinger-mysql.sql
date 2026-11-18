@@ -248,6 +248,24 @@ CREATE TABLE IF NOT EXISTS `Payment` (
   CONSTRAINT `Payment_orderId_fkey` FOREIGN KEY (`orderId`) REFERENCES `Order` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+CREATE TABLE IF NOT EXISTS `PaymentAttempt` (
+  `id` VARCHAR(191) NOT NULL,
+  `userId` VARCHAR(191) NOT NULL,
+  `transactionId` VARCHAR(255) NOT NULL,
+  `amount` INTEGER NOT NULL,
+  `couponId` VARCHAR(191) NULL,
+  `status` VARCHAR(50) NOT NULL DEFAULT 'pending',
+  `checkoutData` JSON NOT NULL,
+  `expiresAt` DATETIME(3) NOT NULL,
+  `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+  `updatedAt` DATETIME(3) NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE INDEX `PaymentAttempt_transactionId_key` (`transactionId`),
+  INDEX `PaymentAttempt_userId_status_idx` (`userId`, `status`),
+  INDEX `PaymentAttempt_expiresAt_idx` (`expiresAt`),
+  CONSTRAINT `PaymentAttempt_userId_fkey` FOREIGN KEY (`userId`) REFERENCES `User` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 CREATE TABLE IF NOT EXISTS `PasswordResetToken` (
   `id` VARCHAR(191) NOT NULL,
   `userId` VARCHAR(191) NOT NULL,

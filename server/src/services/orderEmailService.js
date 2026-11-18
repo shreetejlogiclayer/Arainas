@@ -104,3 +104,39 @@ export const sendQrOrderEmail = async (order, proofStorageKey) => {
     ],
   });
 };
+
+export const sendPayuOrderEmail = async (order) => {
+  const mailer = getTransporter();
+  const addressText = Object.values(order.recipient?.address || {})
+    .filter(Boolean)
+    .join(", ");
+  const itemRows = order.items
+    .map(
+      (item) =>
+        `<li>${escapeHtml(item.product)} — ${item.boxes} Mega Box(es): ${formatCurrency(item.subtotal)}</li>`,
+    )
+    .join("");
+
+  await mailer.sendMail({
+    from: process.env.EMAIL_FROM,
+    to: recipientEmail,
+    subject: `New paid PayU order ${order.orderNumber}`,
+    text: [
+      `New paid order ${order.orderNumber}`,
+      `Payment reference: ${order.payment?.transactionId || "Not available"}`,
+      `Ordered by: ${order.orderedByName}`,
+      `Mobile: ${order.orderedByMobile || "Not provided"}`,
+      `Delivery method: ${order.deliveryMethod === "hand" ? "By Hand" : "Courier"}`,
+      `Recipient: ${order.deliveryRecipientName}`,
+      `Delivery address: ${addressText}`,
+      ...order.items.map(
+        (item) =>
+          `${item.product} — ${item.boxes} Mega Box(es): ${formatCurrency(item.subtotal)}`,
+      ),
+      `Subtotal: ${formatCurrency(order.subtotal)}`,
+      `Coupon discount: ${formatCurrency(order.discount)}`,
+      `Paid total: ${formatCurrency(order.total)}`,
+    ].join("\n"),
+    html: `<div style="font-family:Arial,sans-serif;color:#202020;line-height:1.55"><h1>New paid PayU order ${escapeHtml(order.orderNumber)}</h1><p><strong>Payment reference:</strong> ${escapeHtml(order.payment?.transactionId || "Not available")}</p><p><strong>Ordered by:</strong> ${escapeHtml(order.orderedByName)} · ${escapeHtml(order.orderedByMobile || "Not provided")}</p><p><strong>Recipient:</strong> ${escapeHtml(order.deliveryRecipientName)}<br><strong>Delivery method:</strong> ${order.deliveryMethod === "hand" ? "By Hand" : "Courier"}<br><strong>Address:</strong> ${escapeHtml(addressText)}</p><ul>${itemRows}</ul><p><strong>Subtotal:</strong> ${formatCurrency(order.subtotal)}<br><strong>Coupon discount:</strong> ${formatCurrency(order.discount)}<br><strong>Paid total:</strong> ${formatCurrency(order.total)}</p></div>`,
+  });
+};

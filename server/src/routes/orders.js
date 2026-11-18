@@ -2,7 +2,7 @@ import express from "express";
 import { sessionAuthMiddleware } from "../middleware/auth.js";
 import { isDatabaseUnavailableError } from "../utils/errors.js";
 import {
-  createOrder,
+  createPayuCheckoutForUser,
   getAvailableCoupons,
   getOrderCatalog,
   getOrderPaymentConfiguration,
@@ -21,7 +21,10 @@ router.post("/payu/callback", async (req, res) => {
     result = { status: "pending" };
   }
 
-  const configuredFrontendUrl = process.env.FRONTEND_URL || "http://localhost:5173";
+  const configuredFrontendUrl =
+    process.env.NODE_ENV === "production"
+      ? process.env.FRONTEND_URL || "http://localhost:5173"
+      : "http://localhost:5173";
   let frontendUrl;
   try {
     const baseUrl = new URL(configuredFrontendUrl);
@@ -111,11 +114,10 @@ router.get("/", async (req, res) => {
 
 router.post("/", async (req, res) => {
   try {
-    const order = await createOrder(req.userId, req.body);
+    const checkout = await createPayuCheckoutForUser(req.userId, req.body);
     res.status(201).json({
       success: true,
-      message: "Order placed successfully",
-      data: order,
+      data: checkout,
     });
   } catch (error) {
     const databaseUnavailable = isDatabaseUnavailableError(error);
@@ -136,14 +138,14 @@ router.post("/", async (req, res) => {
         ...(databaseUnavailable && { code: "DATABASE_UNAVAILABLE" }),
         message:
           databaseUnavailable
-            ? "The order database is temporarily unreachable. Your screenshot is still selected. Check order history before retrying to avoid a duplicate order."
+            ? "The payment service is temporarily unreachable. If you have been charged, contact Araina support before retrying."
             : status >= 500
-            ? "We couldn’t place your order right now. Please try again shortly."
+            ? "We couldn’t start PayU checkout right now. Please try again shortly."
             : error?.message || "We couldn’t place your order. Please try again.",
       },
     });
     if (status >= 500) {
-      console.error("Could not place order:", {
+      console.error("Could not start PayU checkout:", {
         code: error?.code,
         message: error?.message,
       });

@@ -218,6 +218,7 @@ export const getUserById = async (userId) => {
 
   return {
     userId: user.id,
+    email: user.email,
     mobile: user.mobile,
     role: user.role,
     mobileVerified: user.mobileVerified,

@@ -1,14 +1,16 @@
-import { randomUUID } from "node:crypto";
+import { randomBytes, randomUUID } from "node:crypto";
 import { prisma } from "./authService.js";
 import { cleanPhone, isValidIndianPhone } from "../utils/validators.js";
 import { calculateCouponDiscount } from "../utils/crypto.js";
 import {
   amountToPaise,
+  createPayuCheckout,
+  isPayuEnabled,
   verifyPayuCallback,
   verifyPayuTransaction,
 } from "./payuService.js";
 import { deletePaymentProof, savePaymentProof } from "./paymentProofService.js";
-import { sendQrOrderEmail } from "./orderEmailService.js";
+import { sendPayuOrderEmail, sendQrOrderEmail } from "./orderEmailService.js";
 
 const addressFields = [
   "houseNumber",
@@ -162,8 +164,9 @@ export const getOrderCatalog = async () => {
   }));
 };
 
-export const getAvailableCoupons = async (userId) =>
-  prisma.coupon.findMany({
+export const getAvailableCoupons = async (userId) => {
+  await releaseExpiredPayuCouponReservations();
+  return prisma.coupon.findMany({
     where: {
       userId,
       status: "available",
@@ -178,12 +181,12 @@ export const getAvailableCoupons = async (userId) =>
     },
     orderBy: { createdAt: "asc" },
   });
+};
 
 export const getOrderPaymentConfiguration = () => {
   return {
-    enabled: true,
-    provider: "qr_code",
-    qrImageUrl: "/payment-qr.jpeg",
+    enabled: isPayuEnabled(),
+    provider: "payu",
   };
 };
 
@@ -284,10 +287,9 @@ export const updateOrderPricing = async (prices) => {
   return getOrderPricing();
 };
 
-export const createOrder = async (userId, input) => {
+const prepareOrderDetails = async (userId, input) => {
   const { boxes, recipientType, couponId } = input;
   const deliveryMethod = input.deliveryMethod ?? "courier";
-  const paymentProof = input.paymentProof;
   const [product, tier, user] = await Promise.all([
     prisma.product.findFirst({
       where: { active: true, name: defaultProduct.name },
@@ -310,11 +312,6 @@ export const createOrder = async (userId, input) => {
       },
     }),
   ]);
-  if (!paymentProof || typeof paymentProof !== "object") {
-    const error = new Error("Upload your payment screenshot before placing the order.");
-    error.status = 400;
-    throw error;
-  }
   if (!Number.isInteger(boxes) || boxes <= 0) {
     throw new Error("Select a valid order quantity");
   }
@@ -386,6 +383,38 @@ export const createOrder = async (userId, input) => {
   }
 
   const subtotal = tier.boxes * tier.pricePerBox;
+  return {
+    boxes,
+    recipientType,
+    couponId,
+    deliveryMethod,
+    product,
+    tier,
+    user,
+    recipient,
+    address,
+    subtotal,
+  };
+};
+
+export const createOrder = async (userId, input) => {
+  const paymentProof = input.paymentProof;
+  if (!paymentProof || typeof paymentProof !== "object") {
+    const error = new Error("Upload your payment screenshot before placing the order.");
+    error.status = 400;
+    throw error;
+  }
+  const {
+    recipientType,
+    couponId,
+    deliveryMethod,
+    product,
+    tier,
+    user,
+    recipient,
+    address,
+    subtotal,
+  } = await prepareOrderDetails(userId, input);
   const orderId = randomUUID();
   const savedProof = await savePaymentProof(paymentProof);
   let order;
@@ -506,10 +535,299 @@ export const createOrder = async (userId, input) => {
   return { ...serializedOrder, emailSent };
 };
 
+const releaseExpiredPayuCouponReservations = async () => {
+  const expiredAttempts = await prisma.paymentAttempt.findMany({
+    where: {
+      status: "pending",
+      expiresAt: { lte: new Date() },
+      couponId: { not: null },
+    },
+    select: { id: true },
+  });
+  if (!expiredAttempts.length) return;
+
+  await prisma.coupon.updateMany({
+    where: {
+      orderId: { in: expiredAttempts.map(({ id }) => id) },
+      status: "available",
+    },
+    data: { orderId: null },
+  });
+};
+
+const createPayuOrderFromAttempt = async (attempt, transactionId) =>
+  prisma.$transaction(async (transaction) => {
+    const currentAttempt = await transaction.paymentAttempt.findUnique({
+      where: { id: attempt.id },
+    });
+    if (!currentAttempt || currentAttempt.status !== "pending") {
+      const existingOrder = await transaction.order.findUnique({
+        where: { id: attempt.id },
+        include: { items: true, deliveryAddress: true, payment: true },
+      });
+      if (existingOrder?.paymentStatus === "success") {
+        return { order: serializeOrder(existingOrder), created: false };
+      }
+      throw new Error("The payment attempt is no longer available.");
+    }
+
+    const details = currentAttempt.checkoutData;
+    if (currentAttempt.couponId) {
+      const coupon = await transaction.coupon.updateMany({
+        where: {
+          id: currentAttempt.couponId,
+          userId: currentAttempt.userId,
+          status: "available",
+          OR: [{ orderId: currentAttempt.id }, { orderId: null }],
+        },
+        data: { orderId: currentAttempt.id, status: "used", usedAt: new Date() },
+      });
+      if (coupon.count !== 1) {
+        throw new Error("The payment succeeded, but the reserved coupon is no longer available.");
+      }
+    }
+
+    const order = await transaction.order.create({
+      data: {
+        id: currentAttempt.id,
+        orderNumber: `AR-${Date.now()}-${randomUUID().slice(0, 8).toUpperCase()}`,
+        userId: currentAttempt.userId,
+        orderedByName: details.orderedByName,
+        orderedByMobile: details.orderedByMobile,
+        recipientType: details.recipientType,
+        deliveryMethod: details.deliveryMethod,
+        deliveryRecipientName: details.deliveryRecipientName,
+        subtotal: details.subtotal,
+        discount: details.discount,
+        total: details.total,
+        couponId: details.couponId,
+        paymentStatus: "success",
+        orderStatus: "pending",
+        items: { create: details.item },
+        payment: {
+          create: {
+            provider: "payu",
+            status: "success",
+            transactionId,
+            amount: currentAttempt.amount,
+          },
+        },
+        deliveryAddress: { create: details.address },
+      },
+      include: { items: true, deliveryAddress: true, payment: true },
+    });
+    await transaction.paymentAttempt.delete({
+      where: { id: currentAttempt.id },
+    });
+    return { order: serializeOrder(order), created: true };
+  });
+
+const markPayuAttemptFailed = async (attemptId) =>
+  prisma.$transaction(async (transaction) => {
+    const attempt = await transaction.paymentAttempt.findUnique({
+      where: { id: attemptId },
+    });
+    if (!attempt || attempt.status !== "pending") return;
+    await transaction.paymentAttempt.update({
+      where: { id: attemptId },
+      data: { status: "failed", couponId: null, checkoutData: {} },
+    });
+    if (attempt.couponId) {
+      await transaction.coupon.updateMany({
+        where: {
+          id: attempt.couponId,
+          userId: attempt.userId,
+          orderId: attemptId,
+          status: "available",
+        },
+        data: { orderId: null },
+      });
+    }
+  });
+
+export const createPayuCheckoutForUser = async (userId, input) => {
+  if (!isPayuEnabled()) {
+    const error = new Error("PayU checkout is not enabled.");
+    error.status = 503;
+    throw error;
+  }
+  await releaseExpiredPayuCouponReservations();
+  const {
+    recipientType,
+    couponId,
+    deliveryMethod,
+    product,
+    tier,
+    user,
+    recipient,
+    address,
+    subtotal,
+  } = await prepareOrderDetails(userId, input);
+  const payerEmail =
+    user.email || (typeof input.email === "string" ? input.email.trim() : "");
+  if (
+    typeof payerEmail !== "string" ||
+    !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(payerEmail)
+  ) {
+    const error = new Error("Enter a valid email address for PayU checkout.");
+    error.status = 400;
+    throw error;
+  }
+
+  let discount = 0;
+  let selectedCoupon = null;
+  if (couponId) {
+    selectedCoupon = await prisma.coupon.findFirst({
+      where: {
+        id: couponId,
+        userId,
+        status: "available",
+        orderId: null,
+        OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }],
+      },
+    });
+    if (!selectedCoupon) throw new Error("That coupon is no longer available");
+    discount = Math.max(
+      0,
+      Math.min(
+        subtotal,
+        calculateCouponDiscount(
+          subtotal,
+          selectedCoupon.discountType,
+          selectedCoupon.discountValue,
+        ),
+      ),
+    );
+    if (subtotal - discount <= 0) {
+      throw new Error("PayU checkout requires an order total greater than zero.");
+    }
+  }
+
+  const attemptId = randomUUID();
+  const transactionId = `AR${randomBytes(11).toString("hex")}`;
+  const total = subtotal - discount;
+  const checkoutData = {
+    orderedByName: user.profile.fullName.trim(),
+    orderedByMobile: cleanPhone(user.mobile),
+    recipientType,
+    deliveryMethod,
+    deliveryRecipientName: recipient.name,
+    subtotal,
+    discount,
+    total,
+    couponId: couponId || null,
+    item: {
+      productNameSnapshot: product.name,
+      sizeSnapshot: "",
+      quantityBoxes: tier.boxes,
+      pricePerBoxSnapshot: tier.pricePerBox,
+      subtotal,
+    },
+    address: {
+      ...address,
+      recipientMobile: recipient.mobile,
+      recipientAlternateMobile: recipient.alternateMobile,
+      country: "India",
+    },
+  };
+  const payuCheckout = createPayuCheckout(
+    { id: attemptId, total, orderedByName: checkoutData.orderedByName,
+      orderedByMobile: checkoutData.orderedByMobile,
+      items: [{ product: product.name }] },
+    transactionId,
+    payerEmail,
+  );
+
+  const expiresAt = new Date(Date.now() + 30 * 60 * 1000);
+  await prisma.$transaction(async (transaction) => {
+    if (couponId) {
+      const reserved = await transaction.coupon.updateMany({
+        where: {
+          id: couponId,
+          userId,
+          status: "available",
+          orderId: null,
+          discountType: selectedCoupon.discountType,
+          discountValue: selectedCoupon.discountValue,
+          OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }],
+        },
+        data: { orderId: attemptId },
+      });
+      if (reserved.count !== 1) throw new Error("That coupon is no longer available");
+    }
+    await transaction.paymentAttempt.create({
+      data: {
+        id: attemptId,
+        userId,
+        transactionId,
+        amount: total,
+        couponId: couponId || null,
+        checkoutData,
+        expiresAt,
+      },
+    });
+  });
+  return payuCheckout;
+};
+
 export const processPayuCallback = async (callbackFields) => {
   const callback = verifyPayuCallback(callbackFields);
   if (!callback) return { status: "verification_failed" };
 
+  const attempt = await prisma.paymentAttempt.findUnique({
+    where: { id: callback.orderId },
+  });
+  if (attempt) {
+    if (
+      attempt.transactionId !== callback.transactionId ||
+      amountToPaise(callback.amount) !== attempt.amount * 100
+    ) {
+      return { status: "verification_failed" };
+    }
+    if (attempt.status === "success") {
+      const order = await prisma.order.findUnique({
+        where: { id: attempt.id },
+        select: { orderNumber: true },
+      });
+      return { status: "success", orderNumber: order?.orderNumber };
+    }
+    if (attempt.status === "failed") return { status: "failed" };
+
+    const verification = await verifyPayuTransaction(callback.transactionId);
+    if (!verification.verified) return { status: "pending" };
+    if (
+      verification.status === "success" &&
+      amountToPaise(String(verification.amount)) === attempt.amount * 100
+    ) {
+      const { order, created } = await createPayuOrderFromAttempt(
+        attempt,
+        callback.transactionId,
+      );
+      if (created) {
+        try {
+          await sendPayuOrderEmail(order);
+        } catch (error) {
+          console.error("Could not email paid PayU order:", {
+            orderNumber: order.orderNumber,
+            code: error?.code,
+            responseCode: error?.responseCode,
+          });
+        }
+      }
+      return { status: "success", orderNumber: order.orderNumber };
+    }
+    if (
+      ["failure", "failed", "usercancelled", "dropped", "bounced"].includes(
+        verification.status,
+      )
+    ) {
+      await markPayuAttemptFailed(attempt.id);
+      return { status: "failed" };
+    }
+    return { status: "pending" };
+  }
+
+  // Process callbacks for orders created by the earlier PayU integration.
   const order = await prisma.order.findUnique({
     where: { id: callback.orderId },
     include: { payment: true },
@@ -551,6 +869,7 @@ export const processPayuCallback = async (callbackFields) => {
       status: "failed",
       transactionId: callback.transactionId,
     });
+    await prisma.order.delete({ where: { id: order.id } });
     return { status: "failed", orderNumber: order.orderNumber };
   }
 

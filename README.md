@@ -46,10 +46,12 @@ Set these in the Hostinger Node.js application settings, not in source control:
 - `SESSION_SECRET` and `JWT_SECRET`: independent random secrets, at least 32 characters each
 - `FRONTEND_URL=https://arainas.com`
 - `PORTAL_URL=https://arainas.com/portal`
-- `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, and `EMAIL_FROM` for contact enquiries and QR order notifications with the payment screenshot attached. Use the SMTP settings and mailbox password shown in Hostinger hPanel → Emails → Configuration; `EMAIL_FROM` must be authorized by that SMTP account. Order notifications are sent to `care@arainas.com`.
-- Add the approved payment QR image to `public/payment-qr.jpeg`; it is copied into the production frontend build and shown during checkout.
-- `USER_UPLOAD_DIR`: a persistent writable path outside the deployment directory for profile photos and order payment screenshots.
-- New orders use QR payment and remain pending until an administrator verifies the screenshot. Existing PayU callback settings are only needed to process historical PayU callbacks.
+- For PayU on this same-origin deployment, set
+  `PAYU_CALLBACK_URL=https://arainas.com/api/orders/payu/callback` in the
+  Hostinger environment settings. A separate `api.arainas.com` subdomain is
+  not needed.
+- `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, and `EMAIL_FROM` for contact enquiries and successful PayU order notifications. Use the SMTP settings and mailbox password shown in Hostinger hPanel → Emails → Configuration; `EMAIL_FROM` must be authorized by that SMTP account. Order notifications are sent to `care@arainas.com`.
+- `PAYMENT_PROVIDER=payu`, `PAYU_ENV`, `PAYU_KEY`, `PAYU_SALT`, and `PAYU_CALLBACK_URL` for PayU hosted checkout; see [PayU setup](./server/PAYU_INTEGRATION.md). Orders are created only after the backend confirms successful payment.
 - Keep `AADHAAR_PROVIDER=none` unless an authorized production verification provider is configured.
 
 Use the exact prefixed database name and database user shown in hPanel. URL-encode special characters in the database password. Keep the database password, session/JWT secrets, and payment secrets private.
@@ -62,7 +64,7 @@ npm run migrate:deploy --prefix server
 
 Do not run development migrations against production. The application connects to MySQL and ensures the default order catalog during startup; it does not automatically apply schema migrations.
 
-The persistent-session migration `20261106120000_add_persistent_sessions` is currently pending on the database configured in the local `server/.env`. The payment-proof migration must also be applied before deploying QR checkout. Back up the production database, set the production environment in Hostinger, and run the migration command from the application root before switching traffic.
+Back up the production database, set the production environment in Hostinger, and apply all pending migrations before switching traffic.
 
 ### Post-deployment checks
 

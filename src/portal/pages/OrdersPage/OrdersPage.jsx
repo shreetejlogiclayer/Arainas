@@ -2,16 +2,11 @@ import React, { useCallback, useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import {
   ArrowRight,
-  ArrowLeft,
-  CheckCircle2,
   Download,
-  ImagePlus,
   LoaderCircle,
   MapPin,
   PackageCheck,
-  QrCode,
   ShoppingBag,
-  Upload,
   UserRound,
 } from "lucide-react";
 import PortalLayout from "../../components/PortalLayout/PortalLayout";
@@ -46,18 +41,6 @@ const blankRecipient = {
 
 const inputClass =
   "w-full min-w-0 rounded-xl border border-araina-pink/20 bg-white px-4 py-3 text-sm outline-none transition placeholder:text-araina-black/35 focus:border-araina-pink focus:ring-4 focus:ring-araina-pink/10";
-
-const fileToBase64 = async (file) => {
-  const bytes = new Uint8Array(await file.arrayBuffer());
-  let binary = "";
-  const chunkSize = 0x8000;
-  for (let offset = 0; offset < bytes.length; offset += chunkSize) {
-    binary += String.fromCharCode(
-      ...bytes.subarray(offset, Math.min(offset + chunkSize, bytes.length)),
-    );
-  }
-  return btoa(binary);
-};
 
 const escapeHtml = (value) =>
   String(value ?? "").replace(
@@ -170,10 +153,6 @@ const OrdersPage = () => {
   const [paymentFeedback, setPaymentFeedback] = useState("");
   const [paymentFailed, setPaymentFailed] = useState(false);
   const [receiptOrder, setReceiptOrder] = useState(null);
-  const [paymentStep, setPaymentStep] = useState(false);
-  const [paymentProof, setPaymentProof] = useState(null);
-  const [proofPreviewUrl, setProofPreviewUrl] = useState("");
-  const [qrImageReady, setQrImageReady] = useState(false);
   const [catalog, setCatalog] = useState([]);
   const [orders, setOrders] = useState([]);
   const [coupons, setCoupons] = useState([]);
@@ -183,21 +162,11 @@ const OrdersPage = () => {
   const [deliveryMethod, setDeliveryMethod] = useState("courier");
   const [recipientType, setRecipientType] = useState("self");
   const [recipient, setRecipient] = useState(blankRecipient);
-  const [placedOrder, setPlacedOrder] = useState(null);
+  const [paymentEmail, setPaymentEmail] = useState("");
   const [fieldErrors, setFieldErrors] = useState({});
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
-
-  useEffect(() => {
-    if (!paymentProof) {
-      setProofPreviewUrl("");
-      return undefined;
-    }
-    const previewUrl = URL.createObjectURL(paymentProof);
-    setProofPreviewUrl(previewUrl);
-    return () => URL.revokeObjectURL(previewUrl);
-  }, [paymentProof]);
 
   const product = catalog.find((item) => item.id === selectedProductId);
   const selectedTier = product?.quantities.find(
@@ -247,6 +216,7 @@ const OrdersPage = () => {
       );
     }
     setUser(account);
+    setPaymentEmail(account.email || "");
     setCatalog(availableProducts);
     setOrders(orderHistory);
     setCoupons(availableCoupons);
@@ -286,6 +256,49 @@ const OrdersPage = () => {
         ]),
       ),
     });
+    if (params.get("payment") === "failed") {
+      const savedDraft = sessionStorage.getItem("araina-payment-draft");
+      if (savedDraft) {
+        try {
+          const draft = JSON.parse(savedDraft);
+          if (draft && typeof draft === "object") {
+            if (typeof draft.selectedProductId === "string") {
+              setSelectedProductId(draft.selectedProductId);
+            }
+            if (typeof draft.selectedBoxes === "string") {
+              setSelectedBoxes(draft.selectedBoxes);
+            }
+            if (typeof draft.selectedCouponId === "string") {
+              setSelectedCouponId(draft.selectedCouponId);
+            }
+            if (typeof draft.paymentEmail === "string") {
+              setPaymentEmail(draft.paymentEmail);
+            }
+            if (["hand", "courier"].includes(draft.deliveryMethod)) {
+              setDeliveryMethod(draft.deliveryMethod);
+            }
+            if (["self", "other"].includes(draft.recipientType)) {
+              setRecipientType(draft.recipientType);
+            }
+            if (draft.recipient && typeof draft.recipient === "object") {
+              setRecipient({
+                ...blankRecipient,
+                ...draft.recipient,
+                address: {
+                  ...blankRecipient.address,
+                  ...draft.recipient.address,
+                },
+              });
+            }
+          }
+        } catch {
+          setError("Your previous order details could not be restored. Please check the form.");
+        }
+        sessionStorage.removeItem("araina-payment-draft");
+      }
+    } else if (params.has("payment")) {
+      sessionStorage.removeItem("araina-payment-draft");
+    }
   }, []);
 
   useEffect(() => {
@@ -319,7 +332,7 @@ const OrdersPage = () => {
         "We couldn’t confirm your payment yet. Please check your order history or contact Araina support.",
     );
     setPaymentFailed(status === "failed");
-    setActiveTab("order-history");
+    setActiveTab(status === "failed" ? "place-order" : "order-history");
   }, []);
 
   useEffect(() => {
@@ -451,30 +464,28 @@ const OrdersPage = () => {
       return;
     }
     if (!validateRecipient()) return;
-    setPaymentStep(true);
-    setQrImageReady(false);
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  };
-
-  const submitQrOrder = async (event) => {
-    event.preventDefault();
-    setError("");
-    if (!paymentProof) {
-      setError("Upload a screenshot of your payment to continue.");
-      return;
-    }
-    if (!qrImageReady) {
-      setError("The payment QR code is unavailable. Please contact Araina support.");
+    if (!paymentConfig.enabled) {
+      setError("PayU checkout is temporarily unavailable. Please try again later.");
       return;
     }
     setIsSubmitting(true);
+    const draft = {
+      selectedProductId,
+      selectedBoxes,
+      selectedCouponId,
+      deliveryMethod,
+      recipientType,
+      recipient,
+      paymentEmail,
+    };
     try {
-      const paymentProofData = await fileToBase64(paymentProof);
-      const order = await requestPortalJson("/api/orders", {
+      sessionStorage.setItem("araina-payment-draft", JSON.stringify(draft));
+      const checkout = await requestPortalJson("/api/orders", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           boxes: selectedTier.boxes,
+          email: paymentEmail,
           recipientType: orderRecipientType,
           deliveryMethod,
           ...(selectedCouponId && { couponId: selectedCouponId }),
@@ -491,26 +502,26 @@ const OrdersPage = () => {
               ),
             },
           }),
-          paymentProof: {
-            contentType: paymentProof.type,
-            data: paymentProofData,
-          },
         }),
       });
-      setPlacedOrder(order);
-      setOrders((current) => [order, ...current]);
-      setCoupons((current) =>
-        current.filter((coupon) => coupon.id !== selectedCouponId),
-      );
-      setSelectedCouponId("");
-      setPaymentProof(null);
-      setPaymentStep(false);
-      setActiveTab("order-history");
+      const form = document.createElement("form");
+      form.method = "POST";
+      form.action = checkout.action;
+      Object.entries(checkout.fields).forEach(([name, value]) => {
+        const field = document.createElement("input");
+        field.type = "hidden";
+        field.name = name;
+        field.value = String(value);
+        form.appendChild(field);
+      });
+      document.body.appendChild(form);
+      form.submit();
     } catch (submitError) {
+      sessionStorage.removeItem("araina-payment-draft");
       setError(
         getPortalErrorMessage(
           submitError,
-          "We couldn’t start your order. Please try again.",
+          "We couldn’t start PayU checkout. Please try again.",
         ),
       );
     } finally {
@@ -615,235 +626,21 @@ const OrdersPage = () => {
           </div>
         ) : activeTab === "place-order" ? (
           <form
-            onSubmit={paymentStep ? submitQrOrder : placeOrder}
+            onSubmit={placeOrder}
             className="mt-6 space-y-6"
           >
+            {paymentFeedback && (
+              <div role="status" className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+                {paymentFeedback}
+              </div>
+            )}
             {!catalog.length ? (
               <section className="rounded-2xl border border-amber-200 bg-amber-50 p-5 text-sm text-amber-900">
                 No orderable products are configured yet. Add an active product,
                 and pricing tiers in the database before placing orders.
               </section>
-            ) : paymentStep ? (
-              <>
-                <section className="overflow-hidden rounded-3xl border border-araina-pink/15 bg-white shadow-sm">
-                  <header className="border-b border-araina-pink/10 px-5 py-5 sm:px-8">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setPaymentStep(false);
-                        setError("");
-                      }}
-                      className="inline-flex items-center gap-2 text-sm font-semibold text-araina-blue transition hover:text-araina-pink"
-                    >
-                      <ArrowLeft size={17} /> Back to order details
-                    </button>
-                    <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-                      <div>
-                        <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-araina-pink">
-                          Step 2 of 2 · Secure checkout
-                        </p>
-                        <h2 className="mt-1 text-2xl font-bold tracking-tight text-araina-black">
-                          Pay by QR code
-                        </h2>
-                        <p className="mt-1 max-w-xl text-sm leading-6 text-araina-black/55">
-                          Scan the code with your UPI app, pay the amount shown,
-                          and upload your payment confirmation.
-                        </p>
-                      </div>
-                      <div className="flex shrink-0 items-center gap-2 self-start rounded-full bg-green-50 px-3 py-2 text-xs font-semibold text-green-800 sm:self-auto">
-                        <QrCode size={15} /> UPI payment
-                      </div>
-                    </div>
-                  </header>
-
-                  <div className="grid items-start gap-5 p-4 sm:gap-6 sm:p-7 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
-                    <section className="rounded-2xl border border-araina-pink/10 bg-[#fbf8f8] p-4 sm:p-5">
-                      <div className="mb-4 flex items-center justify-between gap-3">
-                        <div>
-                          <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-araina-black/45">
-                            Amount to pay
-                          </p>
-                          <p className="mt-1 text-2xl font-bold tracking-tight text-araina-pink">
-                            {formatCurrency(total)}
-                          </p>
-                        </div>
-                        <span className="rounded-lg bg-white px-3 py-2 text-xs font-semibold text-araina-black/60 shadow-sm">
-                          By QR code
-                        </span>
-                      </div>
-                      <div className="rounded-xl border border-black/5 bg-white p-2 shadow-sm sm:p-3">
-                        <img
-                          src={paymentConfig.qrImageUrl || "/payment-qr.jpeg"}
-                          alt="Araina payment QR code"
-                          onLoad={() => setQrImageReady(true)}
-                          onError={() => setQrImageReady(false)}
-                          className="mx-auto block h-auto max-h-[min(72vh,720px)] w-auto max-w-full rounded-lg object-contain"
-                        />
-                      </div>
-                      {!qrImageReady ? (
-                        <p role="alert" className="mt-3 text-xs leading-5 text-red-700">
-                          Payment QR code not found. Add the approved QR image
-                          at <code>public/payment-qr.jpeg</code> and reload.
-                        </p>
-                      ) : (
-                        <p className="mt-3 text-center text-xs leading-5 text-araina-black/55">
-                          Check the recipient name in your UPI app before
-                          confirming payment.
-                        </p>
-                      )}
-                    </section>
-
-                    <div className="space-y-5">
-                      <section className="rounded-2xl border border-araina-pink/10 p-4 sm:p-5">
-                        <h3 className="text-xs font-bold uppercase tracking-[0.15em] text-araina-black/50">
-                          Order summary
-                        </h3>
-                        <p className="mt-3 font-semibold text-araina-black">
-                          {product?.name}
-                        </p>
-                        <p className="mt-1 text-sm text-araina-black/55">
-                          {selectedTier?.boxes} Mega{" "}
-                          {selectedTier?.boxes === 1 ? "Box" : "Boxes"}
-                        </p>
-                        <div className="mt-4 space-y-3 border-t border-araina-pink/10 pt-4 text-sm">
-                          <p className="flex justify-between gap-4">
-                            <span className="text-araina-black/60">Subtotal</span>
-                            <span className="font-medium">{formatCurrency(subtotal)}</span>
-                          </p>
-                          {discount > 0 && (
-                            <p className="flex justify-between gap-4 text-green-700">
-                              <span>Coupon discount</span>
-                              <span className="font-medium">−{formatCurrency(discount)}</span>
-                            </p>
-                          )}
-                          <p className="flex justify-between gap-4 border-t border-araina-pink/10 pt-3 font-bold">
-                            <span>Total</span>
-                            <span className="text-araina-pink">{formatCurrency(total)}</span>
-                          </p>
-                        </div>
-                      </section>
-
-                      <section className="rounded-2xl border border-araina-pink/10 p-4 sm:p-5">
-                        <div>
-                          <h3 className="text-sm font-semibold text-araina-black">
-                            Upload payment screenshot
-                          </h3>
-                          <p className="mt-1 text-xs leading-5 text-araina-black/55">
-                            JPEG, PNG, or WebP · maximum 5 MB
-                          </p>
-                        </div>
-                        <label className="mt-4 flex min-h-28 cursor-pointer flex-col items-center justify-center rounded-xl border border-dashed border-araina-pink/35 bg-araina-pink/[0.025] px-4 py-5 text-center transition hover:border-araina-pink hover:bg-araina-pink/[0.06]">
-                          <span className="flex h-10 w-10 items-center justify-center rounded-full bg-white text-araina-pink shadow-sm">
-                            <ImagePlus size={19} />
-                          </span>
-                          <span className="mt-2 text-sm font-semibold text-araina-pink">
-                            {paymentProof ? "Choose a different image" : "Choose screenshot"}
-                          </span>
-                          <input
-                            type="file"
-                            accept="image/jpeg,image/png,image/webp"
-                            className="sr-only"
-                            onChange={(event) => {
-                              const file = event.target.files?.[0] || null;
-                              if (
-                                file &&
-                                !["image/jpeg", "image/png", "image/webp"].includes(
-                                  file.type,
-                                )
-                              ) {
-                                setPaymentProof(null);
-                                setError("Choose a JPEG, PNG, or WebP screenshot.");
-                              } else if (file && file.size > 5 * 1024 * 1024) {
-                                setPaymentProof(null);
-                                setError("Payment screenshots must be 5 MB or smaller.");
-                              } else {
-                                setPaymentProof(file);
-                                setError("");
-                              }
-                            }}
-                          />
-                        </label>
-                        {proofPreviewUrl && (
-                          <div className="mt-3 flex items-center gap-3 rounded-xl bg-green-50 p-3">
-                            <img
-                              src={proofPreviewUrl}
-                              alt="Selected payment screenshot preview"
-                              className="h-14 w-14 rounded-lg border border-green-100 bg-white object-cover"
-                            />
-                            <div className="min-w-0 flex-1">
-                              <p className="truncate text-sm font-semibold text-green-900">
-                                {paymentProof.name}
-                              </p>
-                              <p className="mt-0.5 text-xs text-green-800">
-                                Screenshot ready to upload
-                              </p>
-                            </div>
-                            <CheckCircle2 size={18} className="shrink-0 text-green-700" />
-                          </div>
-                        )}
-                        <p className="mt-4 text-xs leading-5 text-araina-black/55">
-                          Your order will remain pending until our team verifies
-                          the payment screenshot.
-                        </p>
-                      </section>
-                    </div>
-                  </div>
-                </section>
-                <div
-                  aria-live="polite"
-                  aria-busy={isSubmitting}
-                  className="sticky bottom-3 z-20 flex flex-col gap-3 rounded-2xl border border-araina-pink/15 bg-white/95 p-4 shadow-[0_12px_40px_rgba(30,20,25,0.14)] backdrop-blur-md sm:flex-row sm:items-center sm:justify-between sm:px-6 sm:py-5"
-                >
-                  <p className="text-sm text-araina-black/65">
-                    Total <strong className="ml-2 text-lg text-araina-pink">{formatCurrency(total)}</strong>
-                  </p>
-                  <button
-                    type="submit"
-                    disabled={isSubmitting || !paymentProof || !qrImageReady}
-                    className="inline-flex min-h-14 w-full items-center justify-center gap-3 rounded-xl bg-gradient-to-r from-araina-pink to-[#e94f70] px-6 text-sm font-semibold uppercase tracking-[0.12em] text-white shadow-lg shadow-araina-pink/25 transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto sm:min-w-64"
-                  >
-                    {isSubmitting ? (
-                      <>
-                        <LoaderCircle size={19} className="animate-spin" />
-                        Placing your order…
-                      </>
-                    ) : (
-                      <>
-                        <Upload size={18} />
-                        Continue and place order
-                        <ArrowRight size={18} />
-                      </>
-                    )}
-                  </button>
-                </div>
-              </>
             ) : (
               <>
-                {paymentFeedback && (
-                  <div
-                    role="status"
-                    className={`rounded-xl border p-4 text-sm ${
-                      receiptOrder
-                        ? "border-green-200 bg-green-50 text-green-800"
-                        : "border-amber-200 bg-amber-50 text-amber-900"
-                    }`}
-                  >
-                    {paymentFeedback}
-                    {paymentFailed && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setActiveTab("place-order");
-                          setPaymentFeedback("");
-                          setPaymentFailed(false);
-                        }}
-                        className="ml-2 font-semibold underline"
-                      >
-                        Try again
-                      </button>
-                    )}
-                  </div>
-                )}
                 <section className="rounded-2xl border border-araina-pink/15 bg-white p-5 shadow-sm sm:p-7">
                   <div className="mb-5 flex items-center gap-3">
                     <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-araina-pink/10 text-araina-pink">
@@ -944,6 +741,21 @@ const OrdersPage = () => {
                       </p>
                     </div>
                   </div>
+
+                  {!user?.email && (
+                    <label className="mt-5 block text-xs font-semibold text-araina-black/75">
+                      Email for PayU payment updates
+                      <input
+                        className={`${inputClass} mt-2`}
+                        type="email"
+                        autoComplete="email"
+                        required
+                        value={paymentEmail}
+                        onChange={(event) => setPaymentEmail(event.target.value)}
+                        placeholder="you@example.com"
+                      />
+                    </label>
+                  )}
 
                   <fieldset className="mt-6">
                     <legend className="mb-3 text-xs font-semibold uppercase tracking-wider text-araina-black/75">
@@ -1273,8 +1085,8 @@ const OrdersPage = () => {
                       </span>
                     </p>
                     <p className="text-xs text-araina-black/50">
-                      Pay by QR code on the next screen. Your coupon is held
-                      for this order until payment is reviewed.
+                      Pay securely through PayU. Your coupon is reserved while
+                      checkout is in progress and released if payment fails.
                     </p>
                   </div>
                 </section>
@@ -1293,7 +1105,7 @@ const OrdersPage = () => {
                         {formatCurrency(total)}
                       </p>
                       <p className="mt-0.5 text-[11px] text-araina-black/50">
-                        Pay by QR code
+                        Secure PayU checkout
                       </p>
                     </div>
                     <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-araina-pink/10 text-araina-pink sm:hidden">
@@ -1441,38 +1253,6 @@ const OrdersPage = () => {
                     <Download size={16} /> Print or download receipt
                   </button>
                 </section>
-              </div>
-            )}
-
-            {placedOrder && (
-              <div className="space-y-4 rounded-2xl border border-green-200 bg-green-50 p-5">
-                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                <div className="flex items-center gap-3">
-                  <CheckCircle2 className="shrink-0 text-green-700" size={24} />
-                  <div>
-                    <p className="font-semibold text-green-900">
-                      Order placed · payment pending verification
-                    </p>
-                    <p className="mt-1 text-sm text-green-800">
-                      Order #{placedOrder.orderNumber}
-                    </p>
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => downloadReceipt(placedOrder)}
-                  className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-araina-blue px-5 text-xs font-semibold uppercase tracking-wider text-white"
-                >
-                  <Download size={16} /> Download bill
-                </button>
-                </div>
-                {placedOrder.emailSent === false && (
-                  <p role="status" className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
-                    Your order and screenshot are saved, but we couldn’t email
-                    the order details to support. Please contact care@arainas.com
-                    and share order #{placedOrder.orderNumber}.
-                  </p>
-                )}
               </div>
             )}
 

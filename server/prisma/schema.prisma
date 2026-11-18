@@ -32,6 +32,7 @@ model User {
   referralsReceived     Referral[]           @relation("referred")
   coupons               Coupon[]
   orders                Order[]
+  paymentAttempts       PaymentAttempt[]
   passwordResetTokens   PasswordResetToken[]
 
   @@index([email])
@@ -320,6 +321,24 @@ model Payment {
 
   @@index([orderId])
   @@index([transactionId])
+}
+
+model PaymentAttempt {
+  id            String   @id @default(cuid())
+  userId        String
+  transactionId String   @unique @db.VarChar(255)
+  amount        Int
+  couponId      String?
+  status        String   @default("pending") @db.VarChar(50)
+  checkoutData  Json
+  expiresAt     DateTime
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, status])
+  @@index([expiresAt])
 }
 
 // ==================== PASSWORD RESET TOKEN MODEL ====================
