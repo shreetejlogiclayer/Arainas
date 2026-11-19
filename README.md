@@ -45,6 +45,7 @@ Set these in the Hostinger Node.js application settings, not in source control:
 - `DATABASE_URL=mysql://DB_USER:URL_ENCODED_PASSWORD@127.0.0.1:3306/DB_NAME`
 - `SESSION_SECRET` and `JWT_SECRET`: independent random secrets, at least 32 characters each
 - `FRONTEND_URL=https://arainas.com`
+- `ADMIN_DASHBOARD_ORIGIN=https://adminportal.arainas.com`
 - `PORTAL_URL=https://arainas.com/portal`
 - For PayU, configure `PAYMENT_PROVIDER=payu`, `PAYU_ENV`, `PAYU_KEY`, and
   `PAYU_SALT`. The callback defaults to the same-origin API path; set

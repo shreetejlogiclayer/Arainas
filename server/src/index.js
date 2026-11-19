@@ -50,7 +50,7 @@ app.use(
   cors({
     origin: [
       process.env.FRONTEND_URL || "http://localhost:5173",
-      ...(process.env.ADMIN_DASHBOARD_ORIGIN ? [process.env.ADMIN_DASHBOARD_ORIGIN] : []),
+      process.env.ADMIN_DASHBOARD_ORIGIN || "https://adminportal.arainas.com",
     ],
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
