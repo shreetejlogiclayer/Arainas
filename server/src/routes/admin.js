@@ -4,7 +4,7 @@ import { prisma } from "../services/authService.js";
 import { comparePassword, hashPassword } from "../utils/crypto.js";
 import { rateLimit } from "../middleware/auth.js";
 import { deleteStoredProfilePhotos } from "../services/profileMediaService.js";
-import { getPaymentProof } from "../services/paymentProofService.js";
+import { deletePaymentProof, getPaymentProof } from "../services/paymentProofService.js";
 import { generateRandomCode } from "../utils/crypto.js";
 import { cleanPhone, isValidEmail, isValidIndianPhone, normalizeEmail } from "../utils/validators.js";
 import { getOrderPricing, updateOrderPaymentStatus, updateOrderPricing } from "../services/orderService.js";
@@ -13,6 +13,7 @@ const router = express.Router();
 const orderStatuses = ["pending", "processing", "shipped", "delivered", "cancelled"];
 const paymentStatuses = ["not_configured", "pending", "success", "failed"];
 const pricingAdminEmails = new Set(["rohini.dixit@arainas.com", "yogendra.dixit@arainas.com"]);
+const orderDeletionAdminEmails = new Set(["rohini.dixit@arainas.com", "yogendra.dixit@arainas.com"]);
 const completedMemberWhere = {
   role: { notIn: ["admin", "manager"] },
   profile: { is: { fullName: { not: "" } } },
@@ -781,6 +782,41 @@ router.get("/orders/:id", async (req, res) => {
   } catch (error) {
     console.error("Admin order detail query failed:", error);
     return res.status(500).json({ error: { message: "Unable to load order details." } });
+  }
+});
+
+router.delete("/orders/:id", async (req, res) => {
+  if (!validId(req.params.id)) return res.status(400).json({ error: { message: "Invalid order ID." } });
+  if (req.adminRole !== "admin" || !orderDeletionAdminEmails.has(req.adminEmail)) {
+    return res.status(403).json({ error: { message: "Only Admin 1 and Admin 2 can delete orders." } });
+  }
+  try {
+    const paymentProofKey = await prisma.$transaction(async (tx) => {
+      const order = await tx.order.findUnique({
+        where: { id: req.params.id },
+        select: { payment: { select: { paymentProofKey: true } } },
+      });
+      if (!order) return null;
+      await tx.order.delete({ where: { id: req.params.id } });
+      return order.payment?.paymentProofKey || "";
+    });
+    if (paymentProofKey === null) return res.status(404).json({ error: { message: "Order not found." } });
+
+    if (paymentProofKey) {
+      try {
+        await deletePaymentProof(paymentProofKey);
+      } catch (error) {
+        console.error("Order payment proof cleanup failed after deletion:", error);
+        return res.json({
+          success: true,
+          data: { deleted: true, warning: "The order was deleted, but its stored payment proof could not be removed." },
+        });
+      }
+    }
+    return res.json({ success: true, data: { deleted: true } });
+  } catch (error) {
+    console.error("Admin order deletion failed:", error);
+    return res.status(500).json({ error: { message: "Unable to delete this order and its related records." } });
   }
 });
 
