@@ -46,12 +46,11 @@ Set these in the Hostinger Node.js application settings, not in source control:
 - `SESSION_SECRET` and `JWT_SECRET`: independent random secrets, at least 32 characters each
 - `FRONTEND_URL=https://arainas.com`
 - `PORTAL_URL=https://arainas.com/portal`
-- For PayU on this same-origin deployment, set
-  `PAYU_CALLBACK_URL=https://arainas.com/api/orders/payu/callback` in the
-  Hostinger environment settings. A separate `api.arainas.com` subdomain is
-  not needed.
+- For PayU, configure `PAYMENT_PROVIDER=payu`, `PAYU_ENV`, `PAYU_KEY`, and
+  `PAYU_SALT`. The callback defaults to the same-origin API path; set
+  `PAYU_CALLBACK_URL` if the backend is deployed on a separate host.
 - `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, and `EMAIL_FROM` for contact enquiries and successful PayU order notifications. Use the SMTP settings and mailbox password shown in Hostinger hPanel → Emails → Configuration; `EMAIL_FROM` must be authorized by that SMTP account. Order notifications are sent to `care@arainas.com`.
-- `PAYMENT_PROVIDER=payu`, `PAYU_ENV`, `PAYU_KEY`, `PAYU_SALT`, and `PAYU_CALLBACK_URL` for PayU hosted checkout; see [PayU setup](./server/PAYU_INTEGRATION.md). Orders are created only after the backend confirms successful payment.
+- `PAYMENT_PROVIDER=payu`, `PAYU_ENV`, `PAYU_KEY`, and `PAYU_SALT` for PayU hosted checkout; see [PayU setup](./server/PAYU_INTEGRATION.md). Orders are created only after the backend confirms successful payment.
 - Keep `AADHAAR_PROVIDER=none` unless an authorized production verification provider is configured.
 
 Use the exact prefixed database name and database user shown in hPanel. URL-encode special characters in the database password. Keep the database password, session/JWT secrets, and payment secrets private.

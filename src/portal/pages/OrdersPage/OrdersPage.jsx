@@ -162,7 +162,6 @@ const OrdersPage = () => {
   const [deliveryMethod, setDeliveryMethod] = useState("courier");
   const [recipientType, setRecipientType] = useState("self");
   const [recipient, setRecipient] = useState(blankRecipient);
-  const [paymentEmail, setPaymentEmail] = useState("");
   const [fieldErrors, setFieldErrors] = useState({});
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(true);
@@ -216,7 +215,6 @@ const OrdersPage = () => {
       );
     }
     setUser(account);
-    setPaymentEmail(account.email || "");
     setCatalog(availableProducts);
     setOrders(orderHistory);
     setCoupons(availableCoupons);
@@ -270,9 +268,6 @@ const OrdersPage = () => {
             }
             if (typeof draft.selectedCouponId === "string") {
               setSelectedCouponId(draft.selectedCouponId);
-            }
-            if (typeof draft.paymentEmail === "string") {
-              setPaymentEmail(draft.paymentEmail);
             }
             if (["hand", "courier"].includes(draft.deliveryMethod)) {
               setDeliveryMethod(draft.deliveryMethod);
@@ -476,7 +471,6 @@ const OrdersPage = () => {
       deliveryMethod,
       recipientType,
       recipient,
-      paymentEmail,
     };
     try {
       sessionStorage.setItem("araina-payment-draft", JSON.stringify(draft));
@@ -485,7 +479,6 @@ const OrdersPage = () => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           boxes: selectedTier.boxes,
-          email: paymentEmail,
           recipientType: orderRecipientType,
           deliveryMethod,
           ...(selectedCouponId && { couponId: selectedCouponId }),
@@ -741,21 +734,6 @@ const OrdersPage = () => {
                       </p>
                     </div>
                   </div>
-
-                  {!user?.email && (
-                    <label className="mt-5 block text-xs font-semibold text-araina-black/75">
-                      Email for PayU payment updates
-                      <input
-                        className={`${inputClass} mt-2`}
-                        type="email"
-                        autoComplete="email"
-                        required
-                        value={paymentEmail}
-                        onChange={(event) => setPaymentEmail(event.target.value)}
-                        placeholder="you@example.com"
-                      />
-                    </label>
-                  )}
 
                   <fieldset className="mt-6">
                     <legend className="mb-3 text-xs font-semibold uppercase tracking-wider text-araina-black/75">

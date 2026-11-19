@@ -24,6 +24,17 @@ const addressFields = [
   "state",
   "pinCode",
 ];
+const failedPayuStatuses = new Set([
+  "failure",
+  "failed",
+  "usercancelled",
+  "user_cancelled",
+  "cancel",
+  "cancelled",
+  "canceled",
+  "dropped",
+  "bounced",
+]);
 const defaultProduct = {
   name: "Araina Sanitary Pads",
   description: "Premium sanitary pads designed with women's health in focus",
@@ -663,16 +674,6 @@ export const createPayuCheckoutForUser = async (userId, input) => {
     address,
     subtotal,
   } = await prepareOrderDetails(userId, input);
-  const payerEmail =
-    user.email || (typeof input.email === "string" ? input.email.trim() : "");
-  if (
-    typeof payerEmail !== "string" ||
-    !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(payerEmail)
-  ) {
-    const error = new Error("Enter a valid email address for PayU checkout.");
-    error.status = 400;
-    throw error;
-  }
 
   let discount = 0;
   let selectedCoupon = null;
@@ -735,7 +736,6 @@ export const createPayuCheckoutForUser = async (userId, input) => {
       orderedByMobile: checkoutData.orderedByMobile,
       items: [{ product: product.name }] },
     transactionId,
-    payerEmail,
   );
 
   const expiresAt = new Date(Date.now() + 30 * 60 * 1000);
@@ -816,11 +816,7 @@ export const processPayuCallback = async (callbackFields) => {
       }
       return { status: "success", orderNumber: order.orderNumber };
     }
-    if (
-      ["failure", "failed", "usercancelled", "dropped", "bounced"].includes(
-        verification.status,
-      )
-    ) {
+    if (failedPayuStatuses.has(verification.status)) {
       await markPayuAttemptFailed(attempt.id);
       return { status: "failed" };
     }
@@ -853,18 +849,23 @@ export const processPayuCallback = async (callbackFields) => {
     verification.status === "success" &&
     amountToPaise(String(verification.amount)) === order.payment.amount * 100
   ) {
-    await updateOrderPaymentStatus(order.id, "success", {
+    const paidOrder = await updateOrderPaymentStatus(order.id, "success", {
       status: "success",
       transactionId: callback.transactionId,
     });
+    try {
+      await sendPayuOrderEmail(paidOrder);
+    } catch (error) {
+      console.error("Could not email paid PayU order:", {
+        orderNumber: order.orderNumber,
+        code: error?.code,
+        responseCode: error?.responseCode,
+      });
+    }
     return { status: "success", orderNumber: order.orderNumber };
   }
 
-  if (
-    ["failure", "failed", "usercancelled", "dropped", "bounced"].includes(
-      verification.status,
-    )
-  ) {
+  if (failedPayuStatuses.has(verification.status)) {
     await updateOrderPaymentStatus(order.id, "failed", {
       status: "failed",
       transactionId: callback.transactionId,

@@ -12,10 +12,10 @@ import {
 
 const router = express.Router();
 
-router.post("/payu/callback", async (req, res) => {
+const redirectPayuCallback = async (res, callbackFields) => {
   let result;
   try {
-    result = await processPayuCallback(req.body);
+    result = await processPayuCallback(callbackFields);
   } catch (error) {
     console.error("Could not verify PayU payment callback:", error);
     result = { status: "pending" };
@@ -23,13 +23,18 @@ router.post("/payu/callback", async (req, res) => {
 
   const configuredFrontendUrl =
     process.env.NODE_ENV === "production"
-      ? process.env.FRONTEND_URL || "http://localhost:5173"
+      ? process.env.FRONTEND_URL || "https://arainas.com"
+      : "http://localhost:5173";
+  const fallbackFrontendUrl =
+    process.env.NODE_ENV === "production"
+      ? "https://arainas.com"
       : "http://localhost:5173";
   let frontendUrl;
   try {
     const baseUrl = new URL(configuredFrontendUrl);
     if (
       !["http:", "https:"].includes(baseUrl.protocol) ||
+      (process.env.NODE_ENV === "production" && baseUrl.protocol !== "https:") ||
       baseUrl.username ||
       baseUrl.password
     ) {
@@ -37,8 +42,8 @@ router.post("/payu/callback", async (req, res) => {
     }
     frontendUrl = new URL("/portal/orders", baseUrl);
   } catch {
-    console.error("Invalid FRONTEND_URL; redirecting to the local portal.");
-    frontendUrl = new URL("/portal/orders", "http://localhost:5173");
+    console.error("Invalid FRONTEND_URL; redirecting to the configured site origin.");
+    frontendUrl = new URL("/portal/orders", fallbackFrontendUrl);
   }
 
   const status = ["success", "failed", "pending", "verification_failed"].includes(
@@ -51,6 +56,14 @@ router.post("/payu/callback", async (req, res) => {
     frontendUrl.searchParams.set("order", result.orderNumber);
   }
   res.redirect(303, frontendUrl.toString());
+};
+
+router.get("/payu/callback", async (req, res) => {
+  await redirectPayuCallback(res, req.query);
+});
+
+router.post("/payu/callback", async (req, res) => {
+  await redirectPayuCallback(res, req.body);
 });
 
 router.use(sessionAuthMiddleware);

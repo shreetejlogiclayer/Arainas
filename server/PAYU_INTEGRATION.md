@@ -36,22 +36,24 @@ PAYMENT_PROVIDER=payu
 PAYU_ENV=production
 PAYU_KEY=your_production_merchant_key
 PAYU_SALT=your_production_merchant_salt
-PAYU_CALLBACK_URL=https://arainas.com/api/orders/payu/callback
 FRONTEND_URL=https://arainas.com
 ```
+
+When the frontend and backend share an origin, the callback is derived from
+`FRONTEND_URL` as `https://arainas.com/api/orders/payu/callback`. If the backend
+uses a separate host, set `PAYU_CALLBACK_URL` to its publicly reachable HTTPS
+callback endpoint, for example
+`https://your-backend-host.example/api/orders/payu/callback`. The URL must point
+to the running backend, not a static frontend host. Register this exact URL as
+both the success and failure callback in PayU.
 
 The production server does not load `server/.env`. For local PayU testing, use
 test credentials and an active public HTTPS tunnel to the local backend as
 `PAYU_CALLBACK_URL`. Do not send local test payments to the production callback:
 it reaches the deployed backend, which cannot access local payment attempts.
-
-`PAYU_CALLBACK_URL` must be the exact public HTTPS address of the backend
-callback. This deployment serves `/api/orders/payu/callback` on `arainas.com`;
-do not use `api.arainas.com` unless you separately deploy the backend there and
-configure that subdomain's DNS and HTTPS. Configure the callback URL as both
-the success and failure URL in PayU's dashboard if your account requires
-callback URLs to be registered. The app uses the one callback for both
-outcomes and distinguishes them using PayU's verified transaction status.
+The app uses the one callback for both outcomes and distinguishes them using
+PayU's verified transaction status. The browser is then redirected to
+`/portal/orders` on `FRONTEND_URL`.
 
 Restart the backend after changing environment variables. The portal will then
 show the PayU checkout action. Checkout amount, discounts, and coupons are
@@ -84,8 +86,8 @@ After PayU activates the account and approves the integration:
 
 1. Set `PAYU_ENV=production`.
 2. Replace the test key and salt with the production key and salt.
-3. Set `PAYU_CALLBACK_URL=https://arainas.com/api/orders/payu/callback` and
-   `FRONTEND_URL=https://arainas.com` in the production hosting environment.
+3. Set `FRONTEND_URL` to the deployed portal origin. For a separate backend,
+   also set `PAYU_CALLBACK_URL` to its public HTTPS callback endpoint.
 4. Confirm the callback is publicly reachable and registered with PayU.
 5. Restart the backend, run a low-value live transaction, and reconcile it in
    both the portal and PayU dashboard before announcing availability.

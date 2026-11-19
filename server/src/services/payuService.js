@@ -1,5 +1,7 @@
 import { createHash, timingSafeEqual } from "node:crypto";
 
+export const PAYU_PAYER_EMAIL = "payments@arainas.com";
+
 const hash512 = (value) =>
   createHash("sha512").update(value, "utf8").digest("hex");
 
@@ -17,10 +19,11 @@ export const getPayuSettings = () => {
   const salt = process.env.PAYU_SALT?.trim();
   const environment = process.env.PAYU_ENV?.trim().toLowerCase();
   const callbackUrl = process.env.PAYU_CALLBACK_URL?.trim();
+  const isProduction = process.env.NODE_ENV === "production";
 
-  if (!key || !salt || !callbackUrl) {
+  if (!key || !salt || (!callbackUrl && !isProduction)) {
     throw configurationError(
-      "PayU is selected but PAYU_KEY, PAYU_SALT, or PAYU_CALLBACK_URL is missing.",
+      "PayU is selected but required merchant credentials or callback URL are missing.",
     );
   }
   if (!["test", "production"].includes(environment)) {
@@ -29,12 +32,41 @@ export const getPayuSettings = () => {
 
   let parsedCallbackUrl;
   try {
-    parsedCallbackUrl = new URL(callbackUrl);
+    if (isProduction) {
+      if (callbackUrl) {
+        parsedCallbackUrl = new URL(callbackUrl);
+      } else {
+        const frontendUrl = new URL(
+          process.env.FRONTEND_URL?.trim() || "https://arainas.com",
+        );
+        if (
+          frontendUrl.protocol !== "https:" ||
+          frontendUrl.username ||
+          frontendUrl.password
+        ) {
+          throw new Error("Invalid production frontend URL");
+        }
+        parsedCallbackUrl = new URL(
+          "/api/orders/payu/callback",
+          frontendUrl.origin,
+        );
+      }
+    } else {
+      parsedCallbackUrl = new URL(callbackUrl);
+    }
   } catch {
-    throw configurationError("PAYU_CALLBACK_URL must be a valid HTTPS URL.");
+    throw configurationError(
+      isProduction && !callbackUrl
+        ? "FRONTEND_URL must be a valid HTTPS URL in production."
+        : "PAYU_CALLBACK_URL must be a valid HTTPS URL.",
+    );
   }
   if (parsedCallbackUrl.protocol !== "https:") {
-    throw configurationError("PAYU_CALLBACK_URL must use HTTPS.");
+    throw configurationError(
+      isProduction && !callbackUrl
+        ? "FRONTEND_URL must use HTTPS in production."
+        : "PAYU_CALLBACK_URL must use HTTPS.",
+    );
   }
 
   return {
@@ -45,7 +77,7 @@ export const getPayuSettings = () => {
   };
 };
 
-export const createPayuCheckout = (order, transactionId, email) => {
+export const createPayuCheckout = (order, transactionId) => {
   const settings = getPayuSettings();
   const fields = {
     key: settings.key,
@@ -53,7 +85,7 @@ export const createPayuCheckout = (order, transactionId, email) => {
     amount: Number(order.total).toFixed(2),
     productinfo: order.items[0]?.product || "Araina order",
     firstname: order.orderedByName.slice(0, 60),
-    email,
+    email: PAYU_PAYER_EMAIL,
     phone: order.orderedByMobile,
     surl: settings.callbackUrl,
     furl: settings.callbackUrl,
