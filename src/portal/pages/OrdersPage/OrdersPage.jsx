@@ -39,6 +39,10 @@ const blankRecipient = {
   },
 };
 
+const paymentHistoryLengthKey = "araina-payment-history-length";
+const paymentReturnUrlKey = "araina-payment-return-url";
+const normalizedPaymentReturnUrlKey = "araina-normalized-payment-return-url";
+
 const inputClass =
   "w-full min-w-0 rounded-xl border border-araina-pink/20 bg-white px-4 py-3 text-sm outline-none transition placeholder:text-araina-black/35 focus:border-araina-pink focus:ring-4 focus:ring-araina-pink/10";
 
@@ -148,7 +152,8 @@ const addressFieldSpecs = [
 
 const OrdersPage = () => {
   const paymentStatus = new URLSearchParams(window.location.search).get("payment");
-  const paymentReturnHistoryLength = useRef(null);
+  const paymentReturnReady = useRef(!paymentStatus);
+  const paymentReturnNavigationStarted = useRef(false);
   const [activeTab, setActiveTab] = useState(
     paymentStatus && paymentStatus !== "failed" ? "order-history" : "place-order",
   );
@@ -301,6 +306,72 @@ const OrdersPage = () => {
   }, []);
 
   useEffect(() => {
+    const restorePaymentResult = () => {
+      if (paymentReturnNavigationStarted.current) return;
+
+      const savedReturnUrl = sessionStorage.getItem(paymentReturnUrlKey);
+      if (!savedReturnUrl) return;
+
+      const returnUrl = new URL(savedReturnUrl, window.location.origin);
+      if (
+        returnUrl.origin !== window.location.origin ||
+        returnUrl.pathname !== "/portal/orders"
+      ) {
+        sessionStorage.removeItem(paymentReturnUrlKey);
+        return;
+      }
+
+      const targetUrl = `${returnUrl.pathname}${returnUrl.search}${returnUrl.hash}`;
+      sessionStorage.removeItem(paymentReturnUrlKey);
+      window.location.replace(targetUrl);
+    };
+
+    restorePaymentResult();
+    window.addEventListener("pageshow", restorePaymentResult);
+    return () => window.removeEventListener("pageshow", restorePaymentResult);
+  }, []);
+
+  useEffect(() => {
+    if (!paymentStatus || paymentReturnNavigationStarted.current) return;
+
+    const currentUrl = `${window.location.pathname}${window.location.search}${window.location.hash}`;
+    if (
+      sessionStorage.getItem(normalizedPaymentReturnUrlKey) === currentUrl
+    ) {
+      sessionStorage.removeItem(normalizedPaymentReturnUrlKey);
+      sessionStorage.removeItem(paymentHistoryLengthKey);
+      paymentReturnReady.current = true;
+      return;
+    }
+
+    const checkoutHistoryLength = Number(
+      sessionStorage.getItem(paymentHistoryLengthKey),
+    );
+    if (
+      !sessionStorage.getItem("araina-payment-draft") ||
+      !Number.isInteger(checkoutHistoryLength) ||
+      checkoutHistoryLength < 1
+    ) {
+      paymentReturnReady.current = true;
+      return;
+    }
+
+    const historyDelta = checkoutHistoryLength - window.history.length;
+    if (historyDelta >= 0) {
+      paymentReturnReady.current = true;
+      return;
+    }
+
+    paymentReturnReady.current = false;
+    paymentReturnNavigationStarted.current = true;
+    sessionStorage.setItem(paymentReturnUrlKey, currentUrl);
+    sessionStorage.setItem(normalizedPaymentReturnUrlKey, currentUrl);
+    window.history.go(historyDelta);
+  }, [paymentStatus]);
+
+  useEffect(() => {
+    if (!paymentReturnReady.current) return;
+
     loadOrderData()
       .catch((loadError) =>
         setError(
@@ -330,48 +401,6 @@ const OrdersPage = () => {
         "We couldn’t confirm your payment yet. Please check your order history or contact Araina support.",
     );
     setPaymentFailed(paymentStatus === "failed");
-  }, [paymentStatus]);
-
-  useEffect(() => {
-    if (!paymentStatus) return;
-
-    const currentState = window.history.state ?? {};
-    const hasCheckoutDraft = Boolean(
-      sessionStorage.getItem("araina-payment-draft"),
-    );
-    const isGuardedReturn =
-      currentState.arainaPaymentReturn === paymentStatus;
-    if (!hasCheckoutDraft && !isGuardedReturn) return;
-
-    const savedHistoryLength = Number(
-      sessionStorage.getItem("araina-payment-history-length"),
-    );
-    if (Number.isInteger(savedHistoryLength) && savedHistoryLength > 0) {
-      paymentReturnHistoryLength.current = savedHistoryLength;
-    }
-
-    const returnHistoryLength =
-      window.history.length - (isGuardedReturn ? 1 : 0);
-    if (!isGuardedReturn) {
-      window.history.pushState(
-        { ...currentState, arainaPaymentReturn: paymentStatus },
-        "",
-        window.location.href,
-      );
-    }
-
-    const handlePaymentReturnBack = () => {
-      if (window.history.state?.arainaPaymentReturn !== paymentStatus) {
-        const historyDelta =
-          paymentReturnHistoryLength.current === null
-            ? -2
-            : paymentReturnHistoryLength.current - returnHistoryLength;
-        window.history.go(historyDelta < 0 ? historyDelta : -2);
-      }
-    };
-    window.addEventListener("popstate", handlePaymentReturnBack);
-    return () =>
-      window.removeEventListener("popstate", handlePaymentReturnBack);
   }, [paymentStatus]);
 
   useEffect(() => {
@@ -517,8 +546,10 @@ const OrdersPage = () => {
       recipient,
     };
     try {
+      sessionStorage.removeItem(paymentReturnUrlKey);
+      sessionStorage.removeItem(normalizedPaymentReturnUrlKey);
       sessionStorage.setItem(
-        "araina-payment-history-length",
+        paymentHistoryLengthKey,
         String(window.history.length),
       );
       sessionStorage.setItem("araina-payment-draft", JSON.stringify(draft));
@@ -559,7 +590,9 @@ const OrdersPage = () => {
       form.submit();
     } catch (submitError) {
       sessionStorage.removeItem("araina-payment-draft");
-      sessionStorage.removeItem("araina-payment-history-length");
+      sessionStorage.removeItem(paymentHistoryLengthKey);
+      sessionStorage.removeItem(paymentReturnUrlKey);
+      sessionStorage.removeItem(normalizedPaymentReturnUrlKey);
       setError(
         getPortalErrorMessage(
           submitError,
@@ -668,7 +701,7 @@ const OrdersPage = () => {
           </div>
         ) : activeTab === "place-order" ? (
           <form
-            onSubmit={placeOrder}
+            onSubmit={(event) => event.preventDefault()}
             className="mt-6 space-y-6"
           >
             {paymentFeedback && (
@@ -1140,7 +1173,8 @@ const OrdersPage = () => {
                     </span>
                   </div>
                   <button
-                    type="submit"
+                    type="button"
+                    onClick={placeOrder}
                     disabled={isSubmitting || !selectedTier || !catalog.length}
                     className="group inline-flex min-h-14 w-full items-center justify-center gap-3 rounded-xl bg-gradient-to-r from-araina-pink to-[#e94f70] px-6 text-sm font-semibold uppercase tracking-[0.12em] text-white shadow-lg shadow-araina-pink/25 transition duration-200 hover:-translate-y-0.5 hover:shadow-xl hover:shadow-araina-pink/30 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-araina-pink/25 disabled:cursor-not-allowed disabled:translate-y-0 disabled:from-araina-pink/50 disabled:to-araina-pink/50 disabled:shadow-none sm:w-auto sm:min-w-64"
                   >
