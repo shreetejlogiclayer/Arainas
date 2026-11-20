@@ -147,7 +147,10 @@ const addressFieldSpecs = [
 ];
 
 const OrdersPage = () => {
-  const [activeTab, setActiveTab] = useState("place-order");
+  const paymentStatus = new URLSearchParams(window.location.search).get("payment");
+  const [activeTab, setActiveTab] = useState(
+    paymentStatus && paymentStatus !== "failed" ? "order-history" : "place-order",
+  );
   const [user, setUser] = useState(null);
   const [paymentConfig, setPaymentConfig] = useState({ enabled: false });
   const [paymentFeedback, setPaymentFeedback] = useState("");
@@ -310,8 +313,7 @@ const OrdersPage = () => {
   }, [loadOrderData]);
 
   useEffect(() => {
-    const status = new URLSearchParams(window.location.search).get("payment");
-    if (!status) return;
+    if (!paymentStatus) return;
 
     const messages = {
       success: "Your payment is being confirmed.",
@@ -323,12 +325,11 @@ const OrdersPage = () => {
         "We couldn’t confirm your payment yet, so your order is not marked as paid. If your account was charged, please contact Araina support before trying again.",
     };
     setPaymentFeedback(
-      messages[status] ||
+      messages[paymentStatus] ||
         "We couldn’t confirm your payment yet. Please check your order history or contact Araina support.",
     );
-    setPaymentFailed(status === "failed");
-    setActiveTab(status === "failed" ? "place-order" : "order-history");
-  }, []);
+    setPaymentFailed(paymentStatus === "failed");
+  }, [paymentStatus]);
 
   useEffect(() => {
     let active = true;
