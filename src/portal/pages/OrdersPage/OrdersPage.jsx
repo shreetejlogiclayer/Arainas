@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import {
   ArrowRight,
@@ -148,6 +148,7 @@ const addressFieldSpecs = [
 
 const OrdersPage = () => {
   const paymentStatus = new URLSearchParams(window.location.search).get("payment");
+  const paymentReturnHistoryLength = useRef(null);
   const [activeTab, setActiveTab] = useState(
     paymentStatus && paymentStatus !== "failed" ? "order-history" : "place-order",
   );
@@ -342,6 +343,15 @@ const OrdersPage = () => {
       currentState.arainaPaymentReturn === paymentStatus;
     if (!hasCheckoutDraft && !isGuardedReturn) return;
 
+    const savedHistoryLength = Number(
+      sessionStorage.getItem("araina-payment-history-length"),
+    );
+    if (Number.isInteger(savedHistoryLength) && savedHistoryLength > 0) {
+      paymentReturnHistoryLength.current = savedHistoryLength;
+    }
+
+    const returnHistoryLength =
+      window.history.length - (isGuardedReturn ? 1 : 0);
     if (!isGuardedReturn) {
       window.history.pushState(
         { ...currentState, arainaPaymentReturn: paymentStatus },
@@ -352,7 +362,11 @@ const OrdersPage = () => {
 
     const handlePaymentReturnBack = () => {
       if (window.history.state?.arainaPaymentReturn !== paymentStatus) {
-        window.history.go(-2);
+        const historyDelta =
+          paymentReturnHistoryLength.current === null
+            ? -2
+            : paymentReturnHistoryLength.current - returnHistoryLength;
+        window.history.go(historyDelta < 0 ? historyDelta : -2);
       }
     };
     window.addEventListener("popstate", handlePaymentReturnBack);
@@ -503,6 +517,10 @@ const OrdersPage = () => {
       recipient,
     };
     try {
+      sessionStorage.setItem(
+        "araina-payment-history-length",
+        String(window.history.length),
+      );
       sessionStorage.setItem("araina-payment-draft", JSON.stringify(draft));
       const checkout = await requestPortalJson("/api/orders", {
         method: "POST",
@@ -541,6 +559,7 @@ const OrdersPage = () => {
       form.submit();
     } catch (submitError) {
       sessionStorage.removeItem("araina-payment-draft");
+      sessionStorage.removeItem("araina-payment-history-length");
       setError(
         getPortalErrorMessage(
           submitError,
