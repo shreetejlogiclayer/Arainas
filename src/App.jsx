@@ -87,7 +87,7 @@ function App() {
   const [activeSection, setActiveSection] = useState("home");
   const location = useLocation();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [isAuthLoading, setIsAuthLoading] = useState(false);
+  const [isAuthLoading, setIsAuthLoading] = useState(true);
 
   // Check if user is authenticated on mount
   useEffect(() => {
