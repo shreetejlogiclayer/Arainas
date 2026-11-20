@@ -332,6 +332,35 @@ const OrdersPage = () => {
   }, [paymentStatus]);
 
   useEffect(() => {
+    if (!paymentStatus) return;
+
+    const currentState = window.history.state ?? {};
+    const hasCheckoutDraft = Boolean(
+      sessionStorage.getItem("araina-payment-draft"),
+    );
+    const isGuardedReturn =
+      currentState.arainaPaymentReturn === paymentStatus;
+    if (!hasCheckoutDraft && !isGuardedReturn) return;
+
+    if (!isGuardedReturn) {
+      window.history.pushState(
+        { ...currentState, arainaPaymentReturn: paymentStatus },
+        "",
+        window.location.href,
+      );
+    }
+
+    const handlePaymentReturnBack = () => {
+      if (window.history.state?.arainaPaymentReturn !== paymentStatus) {
+        window.history.go(-2);
+      }
+    };
+    window.addEventListener("popstate", handlePaymentReturnBack);
+    return () =>
+      window.removeEventListener("popstate", handlePaymentReturnBack);
+  }, [paymentStatus]);
+
+  useEffect(() => {
     let active = true;
     const refreshCatalog = async () => {
       if (document.visibilityState !== "visible") return;
